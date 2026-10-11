@@ -1,0 +1,664 @@
+<!doctype html>
+<html lang="de-CH">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Scroll-Video Vorschau</title>
+<!-- Lokale Vorschau: bildet eine Squarespace-7.1-Seite nach (Header, Sektion, Fluid-Engine-Block).
+     Neu erzeugen nach Änderungen am Code-Block: siehe ANLEITUNG.md -->
+<style>
+  body { margin: 0; background: #fff; font-family: Helvetica, Arial, sans-serif; color: #222; }
+  h1, h2, h3, p { white-space: pre-wrap; font-family: Helvetica, Arial, sans-serif; }
+  p { font-size: 18px; line-height: 1.8; }
+  a { color: #0645ad; text-decoration: underline; }
+  .header { position: fixed; z-index: 1000; top: 0; left: 0; right: 0; display: flex; justify-content: space-between;
+            align-items: center; padding: 22px 4vw; color: #fff; mix-blend-mode: difference; }
+  .header b { letter-spacing: .3em; font-size: 14px; }
+  .header nav { display: flex; gap: 28px; font-size: 13px; letter-spacing: .1em; }
+  .page-section { position: relative; }
+  .content-wrapper { max-width: 1200px; margin: 0 auto; padding: 6vw 4vw; overflow: hidden; }
+  .fluid-engine { display: grid; grid-template-columns: repeat(24, 1fr); }
+  .fe-block { grid-column: 2 / 24; overflow: hidden; }
+  footer { padding: 60px 4vw; background: #111; color: #aaa; font-size: 13px; }
+</style>
+</head>
+<body>
+<header class="header"><b>IHRE MARKE</b><nav><span>Kaufen</span><span>Verkaufen</span><span>Kontakt</span></nav></header>
+<main><article class="sections" id="sections">
+<section class="page-section"><div class="content-wrapper"><div class="fluid-engine"><div class="fe-block"><div class="sqs-block code-block sqs-block-code"><div class="sqs-block-content">
+<!-- =====================================================================
+  LUXUS SCROLL-VIDEO + IMMOBILIEN  ·  für einen Squarespace Code-Block
+  ---------------------------------------------------------------------
+  1. Videos + Bilder in Squarespace hochladen (siehe ANLEITUNG.md).
+     Mit den gleichen Dateinamen funktionieren die Links unten sofort.
+  2. Diesen ganzen Code in einen Code-Block einfügen, der ALLEINE in
+     einer eigenen Sektion steht (am besten ganz oben auf der Seite).
+  3. Nur den Block LX_CONFIG anpassen: Links, Texte, Ihre Objekte.
+====================================================================== -->
+<script>
+window.LX_CONFIG = {
+  // ► Video & Bilder (Squarespace-Dateilinks beginnen mit /s/)
+  videoDesktop: "media/luxus-villa-desktop-1440p.mp4",
+  videoMobile:  "media/luxus-villa-mobile-hochformat.mp4",
+  poster:       "media/luxus-villa-poster.jpg",
+
+  // ► Wie lange man durch das Video scrollt (in % der Bildschirmhöhe)
+  scrollLaengeDesktop: 420,
+  scrollLaengeMobile: 340,
+
+  // ► Links der Buttons
+  kontaktLink:   "/kontakt",
+  verkaufenLink: "/kontakt?anliegen=verkaufen",
+  bewertenLink:  "/kontakt?anliegen=bewertung",
+
+  // ► Ihre Objekte – BEISPIELDATEN, bitte durch echte Objekte ersetzen.
+  //   preis: Zahl ohne Apostroph (oder null = "Preis auf Anfrage")
+  //   typ:   bestimmt die Filter (z.B. "Villa", "Haus", "Wohnung")
+  //   link:  Detailseite des Objekts (leer = Kontaktseite)
+  objekte: [
+    { titel: "Moderne Villa mit Pool", ort: "Küsnacht ZH", typ: "Villa",
+      preis: 8900000, zimmer: 7.5, wohnflaeche: 420, grundstueck: 1250,
+      bild: "media/objekt-1.jpg", badge: "Neu", link: "" },
+    { titel: "Architektenhaus am Hang", ort: "Meggen LU", typ: "Haus",
+      preis: 5450000, zimmer: 6.5, wohnflaeche: 310, grundstueck: 980,
+      bild: "media/objekt-2.jpg", badge: "", link: "" },
+    { titel: "Penthouse mit Seesicht", ort: "Zug", typ: "Wohnung",
+      preis: 4200000, zimmer: 5.5, wohnflaeche: 240, grundstueck: null,
+      bild: "media/objekt-4.jpg", badge: "Exklusiv", link: "" },
+    { titel: "Landhaus mit Weitblick", ort: "Saanen BE", typ: "Villa",
+      preis: null, zimmer: 9, wohnflaeche: 560, grundstueck: 2400,
+      bild: "media/objekt-3.jpg", badge: "Off-Market", link: "" },
+    { titel: "Stadtvilla im Grünen", ort: "Zürich-Witikon", typ: "Haus",
+      preis: 6750000, zimmer: 7, wohnflaeche: 290, grundstueck: 650,
+      bild: "media/objekt-1.jpg", badge: "Reserviert", link: "" },
+    { titel: "Gartenwohnung am See", ort: "Lugano-Paradiso TI", typ: "Wohnung",
+      preis: 2950000, zimmer: 4.5, wohnflaeche: 180, grundstueck: null,
+      bild: "media/objekt-2.jpg", badge: "", link: "" }
+  ]
+};
+</script>
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,500;1,400;1,500&family=Manrope:wght@400;500;600&display=swap">
+
+<div id="lx-root" class="lx">
+
+  <!-- ============ 1. SCROLL-VIDEO ============ -->
+  <section class="lx-film" aria-label="Video-Rundgang durch eine Luxusvilla">
+    <div class="lx-stage">
+      <video class="lx-video" muted playsinline webkit-playsinline preload="auto"
+             disablepictureinpicture disableremoteplayback aria-hidden="true" tabindex="-1"></video>
+      <div class="lx-veil" aria-hidden="true"></div>
+
+      <div class="lx-cap lx-cap--center" data-in="-1" data-out="0.15">
+        <p class="lx-eyebrow">Exklusive Immobilien · Schweiz</p>
+        <h1 class="lx-display">Wohnen,<br><em>das bewegt.</em></h1>
+        <p class="lx-sub">Scrollen Sie durch Ihr nächstes Zuhause.</p>
+        <a class="lx-btn lx-btn--light lx-static-only" href="#lx-kaufen">Objekte entdecken</a>
+      </div>
+      <div class="lx-cap lx-cap--left" data-in="0.2" data-out="0.42">
+        <p class="lx-eyebrow">01 — Architektur</p>
+        <h2 class="lx-display lx-display--md">Klare Linien.<br><em>Warme Materialien.</em></h2>
+      </div>
+      <div class="lx-cap lx-cap--right" data-in="0.54" data-out="0.76">
+        <p class="lx-eyebrow">02 — Interieur</p>
+        <h2 class="lx-display lx-display--md">Licht, das den<br><em>Raum formt.</em></h2>
+      </div>
+      <div class="lx-cap lx-cap--center" data-in="0.84" data-out="9">
+        <p class="lx-eyebrow">03 — Ihr Zuhause</p>
+        <h2 class="lx-display">Willkommen<br><em>zuhause.</em></h2>
+        <a class="lx-btn lx-btn--light" href="#lx-kaufen">Objekte entdecken</a>
+      </div>
+
+      <div class="lx-hint" aria-hidden="true">Scrollen<i></i></div>
+      <div class="lx-loader" aria-hidden="true">Video lädt <b>0</b>&thinsp;%</div>
+      <div class="lx-progress" aria-hidden="true"><span></span></div>
+    </div>
+  </section>
+
+  <!-- ============ 2. INTRO ============ -->
+  <section class="lx-section lx-intro">
+    <div class="lx-wrap">
+      <p class="lx-eyebrow lx-reveal">Willkommen</p>
+      <p class="lx-quote lx-reveal">Wir vermitteln Häuser, die man nicht nur bewohnt –
+        <em>sondern jeden Tag aufs Neue erlebt.</em></p>
+      <p class="lx-lead lx-reveal">Von der modernen Villa bis zum Penthouse mit Seesicht:
+        Wir begleiten Sie persönlich und diskret vom ersten Besichtigungstermin bis zur
+        Schlüsselübergabe.</p>
+    </div>
+  </section>
+
+  <!-- ============ 3. HÄUSER KAUFEN ============ -->
+  <section class="lx-section lx-listings" id="lx-kaufen">
+    <div class="lx-wrap">
+      <div class="lx-head">
+        <div>
+          <p class="lx-eyebrow lx-reveal">Aktuelle Objekte</p>
+          <h2 class="lx-h2 lx-reveal">Häuser kaufen</h2>
+        </div>
+        <p class="lx-lead lx-reveal">Eine Auswahl unserer aktuellen Angebote. Weitere Objekte
+          vermarkten wir diskret – fragen Sie uns nach Off-Market-Immobilien.</p>
+      </div>
+
+      <div class="lx-toolbar lx-reveal">
+        <div class="lx-chips" role="group" aria-label="Nach Objektart filtern"></div>
+        <div class="lx-tools">
+          <span class="lx-count" aria-live="polite"></span>
+          <label class="lx-sort">
+            <span class="lx-visually-hidden">Sortieren</span>
+            <select>
+              <option value="standard">Empfohlen</option>
+              <option value="preis-auf">Preis aufsteigend</option>
+              <option value="preis-ab">Preis absteigend</option>
+              <option value="flaeche">Grösste Wohnfläche</option>
+            </select>
+          </label>
+        </div>
+      </div>
+
+      <div class="lx-grid"></div>
+    </div>
+  </section>
+
+  <!-- ============ 4. LEISTUNGEN ============ -->
+  <section class="lx-section lx-services">
+    <div class="lx-wrap">
+      <div class="lx-head">
+        <div>
+          <p class="lx-eyebrow lx-reveal">Leistungen</p>
+          <h2 class="lx-h2 lx-reveal">Kaufen. Verkaufen.<br><em>Bewerten.</em></h2>
+        </div>
+      </div>
+      <div class="lx-service-grid">
+        <a class="lx-service lx-reveal" data-href="kontaktLink" href="#">
+          <span class="lx-service__no">01</span>
+          <h3>Immobilie kaufen</h3>
+          <p>Wir finden Ihr Traumhaus – auch Objekte, die nie öffentlich ausgeschrieben werden.</p>
+          <span class="lx-more">Suchauftrag erteilen</span>
+        </a>
+        <a class="lx-service lx-reveal" data-href="verkaufenLink" href="#">
+          <span class="lx-service__no">02</span>
+          <h3>Immobilie verkaufen</h3>
+          <p>Hochwertige Inszenierung, ausgewählte Käufer und eine Vermarktung zum besten Preis.</p>
+          <span class="lx-more">Verkauf besprechen</span>
+        </a>
+        <a class="lx-service lx-reveal" data-href="bewertenLink" href="#">
+          <span class="lx-service__no">03</span>
+          <h3>Immobilie bewerten</h3>
+          <p>Eine fundierte Marktwerteinschätzung Ihrer Liegenschaft – unverbindlich und vertraulich.</p>
+          <span class="lx-more">Bewertung anfragen</span>
+        </a>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ 5. KONTAKT ============ -->
+  <section class="lx-cta">
+    <div class="lx-cta__inner lx-wrap">
+      <p class="lx-eyebrow lx-reveal">Persönliche Beratung</p>
+      <h2 class="lx-h2 lx-reveal">Ihr neues Zuhause<br><em>wartet auf Sie.</em></h2>
+      <div class="lx-cta__actions lx-reveal">
+        <a class="lx-btn lx-btn--light lx-btn--fill" data-href="kontaktLink" href="#">Termin vereinbaren</a>
+        <a class="lx-btn lx-btn--light" data-href="verkaufenLink" href="#">Immobilie verkaufen</a>
+      </div>
+    </div>
+  </section>
+</div>
+
+<style>
+  .lx {
+    --lx-ink: #171512;
+    --lx-ivory: #f5f1ea;
+    --lx-sand: #ebe3d6;
+    --lx-muted: #6b6358;
+    --lx-line: #dcd2c3;
+    --lx-bronze: #9a7a4f;
+    --lx-night: #0e0d0b;
+    --lx-serif: "Cormorant Garamond", Georgia, "Times New Roman", serif;
+    --lx-sans: "Manrope", "Helvetica Neue", Arial, sans-serif;
+    --lx-pad: clamp(20px, 6vw, 96px);
+    position: relative;
+    width: 100%;
+    background: var(--lx-ivory);
+    color: var(--lx-ink);
+    font-family: var(--lx-sans);
+    font-size: 16px;
+    line-height: 1.6;
+    -webkit-font-smoothing: antialiased;
+    text-align: left;
+  }
+  .lx *, .lx *::before, .lx *::after { box-sizing: border-box; }
+  /* Squarespace-Theme-Stile neutralisieren (:where hält die Spezifität niedrig) */
+  .lx :where(h1, h2, h3, p, ul, li) {
+    margin: 0; padding: 0; font: inherit; color: inherit; letter-spacing: inherit;
+    text-transform: none; white-space: normal; text-align: inherit;
+  }
+  .lx ul { list-style: none; }
+  .lx a { color: inherit; text-decoration: none; background-image: none; border: 0; }
+  .lx em { font-style: italic; }
+  .lx img { display: block; max-width: none; }
+  .lx :focus-visible { outline: 2px solid var(--lx-bronze); outline-offset: 4px; }
+  .lx-visually-hidden { position: absolute !important; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+
+  /* ---------- Scroll-Video ---------- */
+  .lx-film { position: relative; height: calc(var(--lx-len, 420) * 1vh); background: var(--lx-night); }
+  .lx-stage { position: sticky; top: 0; height: 100vh; overflow: hidden; }
+  .lx-video { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; display: block; background: var(--lx-night); }
+  .lx-veil {
+    position: absolute; inset: 0; pointer-events: none;
+    background:
+      radial-gradient(ellipse 70% 60% at 50% 50%, rgba(10, 9, 8, .38), rgba(10, 9, 8, .12) 75%),
+      linear-gradient(180deg, rgba(10, 9, 8, .42) 0%, rgba(10, 9, 8, 0) 30%, rgba(10, 9, 8, 0) 65%, rgba(10, 9, 8, .55) 100%);
+  }
+  .lx-cap {
+    position: absolute; inset: 0; display: flex; flex-direction: column; justify-content: center;
+    padding: 0 var(--lx-pad); color: #fff; opacity: 0; visibility: hidden; pointer-events: none;
+    text-shadow: 0 2px 28px rgba(0, 0, 0, .3); will-change: opacity, transform;
+  }
+  .lx-cap--center { align-items: center; text-align: center; }
+  .lx-cap--left { align-items: flex-start; text-align: left; }
+  .lx-cap--right { align-items: flex-end; text-align: right; }
+  .lx-eyebrow { font-size: 12px; font-weight: 600; letter-spacing: .28em; text-transform: uppercase; margin-bottom: 20px; opacity: .9; }
+  .lx .lx-eyebrow { letter-spacing: .28em; text-transform: uppercase; }
+  .lx-display { font-family: var(--lx-serif); font-weight: 400; font-size: clamp(48px, 8.4vw, 132px); line-height: .95; letter-spacing: -.015em; color: #fff; }
+  .lx-display--md { font-size: clamp(40px, 6vw, 96px); }
+  .lx-sub { margin-top: 24px; font-size: clamp(15px, 1.25vw, 18px); opacity: .9; max-width: 34ch; }
+  .lx-cap .lx-btn { margin-top: 36px; }
+  .lx-static-only { display: none !important; }
+  .lx-hint {
+    position: absolute; left: 50%; bottom: 36px; transform: translateX(-50%);
+    display: flex; flex-direction: column; align-items: center; gap: 12px;
+    color: #fff; font-size: 11px; font-weight: 600; letter-spacing: .3em; text-transform: uppercase;
+  }
+  .lx-hint i { display: block; width: 1px; height: 48px; background: linear-gradient(#fff, rgba(255, 255, 255, 0)); transform-origin: top; animation: lx-drip 2s cubic-bezier(.6, 0, .3, 1) infinite; }
+  @keyframes lx-drip { 0% { transform: scaleY(0); } 50% { transform: scaleY(1); } 100% { transform: scaleY(1); opacity: 0; } }
+  .lx-loader {
+    position: absolute; right: var(--lx-pad); bottom: 34px; color: #fff; font-size: 11px; font-weight: 600;
+    letter-spacing: .2em; text-transform: uppercase; opacity: .8; transition: opacity .8s;
+  }
+  .lx--ready .lx-loader { opacity: 0; }
+  .lx-progress { position: absolute; left: 0; right: 0; bottom: 0; height: 2px; background: rgba(255, 255, 255, .16); }
+  .lx-progress span { display: block; height: 100%; background: #fff; transform-origin: left; transform: scaleX(0); }
+
+  /* ---------- Buttons ---------- */
+  .lx .lx-btn {
+    display: inline-flex; align-items: center; justify-content: center; gap: 12px;
+    padding: 17px 30px; border: 1px solid currentColor; border-radius: 0;
+    font: 600 12px/1 var(--lx-sans); letter-spacing: .18em; text-transform: uppercase;
+    text-shadow: none; cursor: pointer; transition: background-color .35s, color .35s, border-color .35s;
+  }
+  .lx .lx-btn--light { color: #fff; }
+  .lx .lx-btn--light:hover, .lx .lx-btn--fill { background: #fff; color: var(--lx-ink); border-color: #fff; }
+  .lx .lx-btn--fill:hover { background: transparent; color: #fff; }
+
+  /* ---------- Sektionen ---------- */
+  .lx-section { padding: clamp(80px, 11vw, 160px) var(--lx-pad); }
+  .lx-wrap { max-width: 1320px; margin: 0 auto; }
+  .lx-section .lx-eyebrow { color: var(--lx-bronze); opacity: 1; }
+  .lx-h2 { font-family: var(--lx-serif); font-weight: 400; font-size: clamp(42px, 5.6vw, 84px); line-height: 1; letter-spacing: -.015em; color: inherit; }
+  .lx-lead { color: var(--lx-muted); max-width: 48ch; font-size: 16px; line-height: 1.7; }
+  .lx-head { display: flex; justify-content: space-between; align-items: flex-end; gap: 28px 64px; flex-wrap: wrap; margin-bottom: clamp(36px, 5vw, 64px); }
+
+  .lx-intro .lx-wrap { max-width: 1040px; }
+  .lx-quote { font-family: var(--lx-serif); font-size: clamp(32px, 4.2vw, 60px); line-height: 1.12; letter-spacing: -.01em; margin-bottom: 36px; }
+  .lx-quote em { color: var(--lx-bronze); }
+
+  /* ---------- Objekte ---------- */
+  .lx-listings { background: #fff; scroll-margin-top: 60px; }
+  .lx-toolbar {
+    display: flex; justify-content: space-between; align-items: center; gap: 16px; flex-wrap: wrap;
+    padding: 14px 0; margin-bottom: clamp(32px, 4vw, 52px);
+    border-top: 1px solid var(--lx-line); border-bottom: 1px solid var(--lx-line);
+  }
+  .lx-chips { display: flex; gap: 6px; flex-wrap: wrap; }
+  .lx .lx-chip {
+    appearance: none; -webkit-appearance: none; margin: 0; border: 1px solid transparent; background: none;
+    padding: 11px 18px; border-radius: 999px; cursor: pointer; color: var(--lx-muted);
+    font: 600 12px/1 var(--lx-sans); letter-spacing: .12em; text-transform: uppercase; transition: color .3s, background-color .3s;
+  }
+  .lx .lx-chip:hover { color: var(--lx-ink); }
+  .lx .lx-chip[aria-pressed="true"] { background: var(--lx-ink); color: var(--lx-ivory); }
+  .lx-tools { display: flex; align-items: center; gap: 20px; }
+  .lx-count { font-size: 13px; color: var(--lx-muted); white-space: nowrap; }
+  .lx .lx-sort select {
+    appearance: none; -webkit-appearance: none; margin: 0; border: 1px solid var(--lx-line); border-radius: 999px;
+    background: #fff url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6'%3E%3Cpath d='M1 1l4 4 4-4' fill='none' stroke='%23171512' stroke-width='1.3'/%3E%3C/svg%3E") no-repeat right 16px center;
+    padding: 11px 40px 11px 18px; font: 500 13px/1.2 var(--lx-sans); color: var(--lx-ink); cursor: pointer;
+  }
+  .lx-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: clamp(40px, 4vw, 60px) clamp(20px, 2.2vw, 32px); }
+  .lx-empty { grid-column: 1 / -1; color: var(--lx-muted); padding: 40px 0; }
+  .lx-card { display: block; }
+  .lx-card__media { position: relative; aspect-ratio: 3 / 2; overflow: hidden; background: var(--lx-sand); }
+  .lx-card__media img { width: 100%; height: 100%; object-fit: cover; transition: transform 1.4s cubic-bezier(.2, .7, .2, 1); }
+  .lx-card:hover .lx-card__media img { transform: scale(1.05); }
+  .lx-badge {
+    position: absolute; top: 14px; left: 14px; padding: 8px 11px; background: rgba(245, 241, 234, .94); color: var(--lx-ink);
+    font-size: 10.5px; font-weight: 600; letter-spacing: .18em; text-transform: uppercase; line-height: 1;
+  }
+  .lx-card__body { padding-top: 20px; }
+  .lx-card__loc { display: flex; align-items: center; gap: 7px; font-size: 11.5px; font-weight: 600; letter-spacing: .16em; text-transform: uppercase; color: var(--lx-muted); }
+  .lx-card__loc svg { flex: none; }
+  .lx-card__title { font-family: var(--lx-serif); font-weight: 500; font-size: clamp(26px, 2.2vw, 32px); line-height: 1.12; margin-top: 10px; color: var(--lx-ink); }
+  .lx-card__facts { display: flex; flex-wrap: wrap; gap: 4px 20px; margin-top: 14px; font-size: 14px; color: var(--lx-muted); }
+  .lx-card__facts b { color: var(--lx-ink); font-weight: 600; }
+  .lx-card__foot { display: flex; justify-content: space-between; align-items: center; gap: 12px; margin-top: 20px; padding-top: 18px; border-top: 1px solid var(--lx-line); }
+  .lx-price { font-size: 17px; font-weight: 600; font-variant-numeric: tabular-nums; }
+  .lx-more { display: inline-flex; align-items: center; gap: 10px; font-size: 12px; font-weight: 600; letter-spacing: .14em; text-transform: uppercase; color: var(--lx-ink); }
+  .lx-more::after { content: ""; width: 22px; height: 1px; background: currentColor; transition: width .4s; }
+  .lx-card:hover .lx-more::after, .lx-service:hover .lx-more::after { width: 40px; }
+
+  /* ---------- Leistungen ---------- */
+  .lx-services { background: var(--lx-sand); }
+  .lx-services .lx-h2 em { color: var(--lx-bronze); }
+  .lx-service-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); border-top: 1px solid var(--lx-line); }
+  .lx-service { display: flex; flex-direction: column; gap: 16px; padding: 40px 36px 44px 0; transition: background-color .4s; }
+  .lx-service + .lx-service { padding-left: 36px; border-left: 1px solid var(--lx-line); }
+  .lx-service__no { font-family: var(--lx-serif); font-size: 22px; font-variant-numeric: lining-nums; color: var(--lx-bronze); }
+  .lx-service h3 { font-family: var(--lx-serif); font-weight: 500; font-size: clamp(28px, 2.4vw, 36px); line-height: 1.1; color: var(--lx-ink); }
+  .lx-service p { color: var(--lx-muted); flex: 1; }
+
+  /* ---------- Kontakt ---------- */
+  .lx-cta {
+    position: relative; overflow: hidden; color: #fff; text-align: center; background: var(--lx-night);
+    padding: clamp(110px, 16vw, 220px) var(--lx-pad);
+  }
+  .lx-cta::before {
+    content: ""; position: absolute; inset: 0; background: var(--lx-cta-bg, none) center / cover no-repeat;
+    opacity: .62; transform: scale(1.04);
+  }
+  .lx-cta::after { content: ""; position: absolute; inset: 0; background: linear-gradient(180deg, rgba(14, 13, 11, .45), rgba(14, 13, 11, .7)); }
+  .lx-cta__inner { position: relative; z-index: 1; }
+  .lx-cta .lx-eyebrow { color: #fff; opacity: .85; }
+  .lx-cta .lx-h2 em { font-style: italic; }
+  .lx-cta__actions { display: flex; justify-content: center; flex-wrap: wrap; gap: 14px; margin-top: 44px; }
+
+  /* ---------- Einblend-Animationen (nur mit JS) ---------- */
+  .lx--js .lx-reveal { opacity: 0; transform: translateY(26px); transition: opacity 1s cubic-bezier(.2, .7, .2, 1), transform 1s cubic-bezier(.2, .7, .2, 1); }
+  .lx--js .lx-reveal.is-in { opacity: 1; transform: none; }
+
+  /* ---------- Squarespace-Einbettung ---------- */
+  .lx--inline { max-width: none !important; }
+
+  /* ---------- Responsive ---------- */
+  @media (max-width: 1024px) {
+    .lx-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    .lx-service-grid { grid-template-columns: 1fr; }
+    .lx-service, .lx-service + .lx-service { padding: 32px 0; border-left: 0; border-bottom: 1px solid var(--lx-line); }
+  }
+  @media (max-width: 640px) {
+    .lx-grid { grid-template-columns: 1fr; }
+    .lx-cap--left, .lx-cap--right { align-items: center; text-align: center; }
+    .lx-toolbar { align-items: stretch; }
+    .lx-tools { width: 100%; justify-content: space-between; }
+    .lx-loader { right: auto; left: var(--lx-pad); }
+    .lx-hint { bottom: 48px; }
+  }
+
+  /* ---------- Weniger Bewegung gewünscht ---------- */
+  .lx--static .lx-film { height: 100vh; }
+  .lx--static .lx-static-only { display: inline-flex !important; }
+  .lx--static .lx-hint, .lx--static .lx-progress, .lx--static .lx-loader { display: none; }
+  @media (prefers-reduced-motion: reduce) {
+    .lx--js .lx-reveal { opacity: 1; transform: none; transition: none; }
+    .lx-hint i { animation: none; }
+  }
+</style>
+
+<script>
+(function () {
+  "use strict";
+  var root = document.getElementById("lx-root");
+  if (!root || root.getAttribute("data-lx-init")) return;
+  root.setAttribute("data-lx-init", "1");
+  root.classList.add("lx--js");
+
+  var C = window.LX_CONFIG || {};
+  var FPS = 48;            // Bildrate der Videodateien
+  var REST_FPS = 24;       // im Stillstand nur Original-Frames zeigen
+  var VIDEO_END = 0.92;    // Video endet bei 92 % des Scrollwegs, danach steht das letzte Bild
+  var EASE = 0.12;         // Nachzieh-Effekt beim Scrollen (kleiner = weicher)
+  var FADE = 0.05;         // Ein-/Ausblendlänge der Texte
+
+  var $ = function (s, el) { return (el || root).querySelector(s); };
+  var $$ = function (s, el) { return Array.prototype.slice.call((el || root).querySelectorAll(s)); };
+  var clamp = function (v, a, b) { return v < a ? a : v > b ? b : v; };
+
+  /* ---------- 1. Aus dem Squarespace-Raster lösen (volle Breite, Sticky funktioniert) ---------- */
+  (function liftOut() {
+    var section = root.closest(".page-section");
+    var own = root.closest(".fe-block") || root.closest(".sqs-block");
+    var inEditor = window.top !== window.self;
+    if (section && own && !inEditor) {
+      var others = $$(".fe-block, .sqs-block", section).filter(function (b) {
+        return b !== own && !b.contains(own) && !own.contains(b);
+      });
+      if (!others.length) {
+        section.parentNode.insertBefore(root, section);
+        section.style.display = "none";
+        return;
+      }
+    }
+    if (!section) return;
+    // Fallback (Editor-Vorschau oder weitere Blöcke in der Sektion): Eltern-Overflow lösen + volle Breite
+    for (var el = root.parentElement; el && el !== document.body; el = el.parentElement) {
+      var cs = getComputedStyle(el);
+      if (cs.overflowX !== "visible" || cs.overflowY !== "visible") el.style.overflow = "visible";
+    }
+    root.classList.add("lx--inline");
+    var breakout = function () {
+      root.style.marginLeft = "0px";
+      root.style.width = document.documentElement.clientWidth + "px";
+      root.style.marginLeft = -root.getBoundingClientRect().left + "px";
+    };
+    breakout();
+    window.addEventListener("resize", breakout);
+  })();
+
+  /* ---------- 2. Links aus der Konfiguration ---------- */
+  $$("[data-href]").forEach(function (a) { a.href = C[a.getAttribute("data-href")] || C.kontaktLink || "#"; });
+  if (C.poster) $(".lx-cta").style.setProperty("--lx-cta-bg", 'url("' + C.poster + '")');
+  $$('a[href="#lx-kaufen"]').forEach(function (a) {
+    a.addEventListener("click", function (e) {
+      e.preventDefault();
+      $("#lx-kaufen").scrollIntoView({ behavior: "smooth", block: "start" });
+    });
+  });
+
+  /* ---------- 3. Scroll-Video ---------- */
+  var film = $(".lx-film"), video = $(".lx-video"), veil = $(".lx-veil");
+  var bar = $(".lx-progress span"), hint = $(".lx-hint"), loaderNum = $(".lx-loader b");
+  var caps = $$(".lx-cap").map(function (el) {
+    return { el: el, a: parseFloat(el.getAttribute("data-in")), b: parseFloat(el.getAttribute("data-out")), o: -1 };
+  });
+  var reduced = window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+  var mobile = window.innerHeight > window.innerWidth && window.innerWidth < 900;
+
+  film.style.setProperty("--lx-len", mobile ? (C.scrollLaengeMobile || 340) : (C.scrollLaengeDesktop || 420));
+  if (C.poster) video.poster = C.poster;
+  video.muted = true;
+  video.defaultMuted = true;
+  video.playsInline = true;
+
+  function smooth(x) { return x * x * (3 - 2 * x); }
+  function ramp(x, a, b) { return x <= a ? 0 : x >= b ? 1 : smooth((x - a) / (b - a)); }
+  // Die Kamera wird im Video schneller: Anfang etwas zügiger, Ende langsamer scrubben
+  function timeMap(v) { return 1.4 * v - 0.4 * v * v; }
+
+  function render(p) {
+    var strongest = 0;
+    caps.forEach(function (c) {
+      var o = Math.max(0, Math.min(ramp(p, c.a, c.a + FADE), 1 - ramp(p, c.b - FADE, c.b)));
+      strongest = Math.max(strongest, o);
+      if (Math.abs(o - c.o) < 0.002) return;
+      c.o = o;
+      c.el.style.opacity = o.toFixed(3);
+      c.el.style.transform = "translate3d(0," + ((1 - o) * 28).toFixed(1) + "px,0)";
+      c.el.style.visibility = o > 0.002 ? "visible" : "hidden";
+      c.el.style.pointerEvents = o > 0.6 ? "auto" : "none";
+    });
+    veil.style.opacity = (0.4 + 0.6 * strongest).toFixed(3);
+    bar.style.transform = "scaleX(" + p.toFixed(4) + ")";
+    hint.style.opacity = Math.max(0, 1 - p / 0.04).toFixed(3);
+  }
+
+  if (reduced) {
+    root.classList.add("lx--static");
+    render(0);
+  } else {
+    var ready = false, lastT = -1;
+
+    function setLoader(f) { if (loaderNum) loaderNum.textContent = Math.round(f * 100); }
+    function markReady() {
+      if (ready) return;
+      ready = true;
+      lastT = -1;
+      root.classList.add("lx--ready");
+      kick();
+    }
+    video.addEventListener("loadeddata", function () {
+      // iOS rendert Seek-Frames erst, nachdem das Video einmal angespielt wurde
+      var pr = video.play();
+      if (pr && pr.then) pr.then(function () { video.pause(); markReady(); }, markReady);
+      else { video.pause(); markReady(); }
+    });
+
+    (function loadVideo(url) {
+      if (!url) return;
+      function direct() { video.preload = "auto"; video.src = url; video.load(); }
+      if (!window.fetch || !window.ReadableStream) return direct();
+      // Ganze Datei in den Speicher laden = sofortiges, ruckelfreies Springen zwischen Frames
+      fetch(url).then(function (res) {
+        if (!res.ok || !res.body) throw new Error("HTTP " + res.status);
+        var total = +res.headers.get("content-length") || 0, got = 0, chunks = [], reader = res.body.getReader();
+        return (function pump() {
+          return reader.read().then(function (r) {
+            if (r.done) return new Blob(chunks, { type: "video/mp4" });
+            chunks.push(r.value);
+            got += r.value.length;
+            if (total) setLoader(got / total);
+            return pump();
+          });
+        })();
+      }).then(function (blob) {
+        setLoader(1);
+        video.src = URL.createObjectURL(blob);
+        video.load();
+      }).catch(direct);
+    })(mobile && C.videoMobile ? C.videoMobile : C.videoDesktop);
+
+    function seek(v, resting) {
+      var d = video.duration;
+      if (!ready || !d || video.seeking) return;
+      var f = resting ? REST_FPS : FPS;
+      var t = Math.round(timeMap(v) * d * f) / f + 0.25 / FPS;
+      t = Math.min(t, d - 0.5 / FPS);
+      if (Math.abs(t - lastT) < 0.001) return;
+      lastT = t;
+      video.currentTime = t;
+    }
+
+    var target = 0, cur = -1, lastMove = 0, inView = true, raf = 0;
+    function loop(now) {
+      raf = 0;
+      var r = film.getBoundingClientRect();
+      var total = r.height - window.innerHeight;
+      var t = total > 0 ? clamp(-r.top / total, 0, 1) : 0;
+      if (t !== target) { target = t; lastMove = now; }
+      if (cur < 0) cur = target;
+      var diff = target - cur;
+      cur = Math.abs(diff) < 0.0004 ? target : cur + diff * EASE;
+      render(cur);
+      seek(Math.min(1, cur / VIDEO_END), cur === target && now - lastMove > 160);
+      if (inView) raf = requestAnimationFrame(loop);
+    }
+    function kick() { if (!raf) raf = requestAnimationFrame(loop); }
+
+    if ("IntersectionObserver" in window) {
+      new IntersectionObserver(function (entries) {
+        inView = entries[0].isIntersecting;
+        if (inView) kick();
+      }).observe(film);
+    }
+    kick();
+  }
+
+  /* ---------- 4. Objekte ---------- */
+  var objekte = (C.objekte || []).slice();
+  var grid = $(".lx-grid"), chipsEl = $(".lx-chips"), sortEl = $(".lx-sort select"), countEl = $(".lx-count");
+  var nf = new Intl.NumberFormat("de-CH");
+  var PLURAL = { Villa: "Villen", Haus: "Häuser", Wohnung: "Wohnungen", Chalet: "Chalets", Penthouse: "Penthäuser", Grundstück: "Grundstücke" };
+  var state = { typ: "Alle", sort: "standard" };
+  var PIN = '<svg width="11" height="14" viewBox="0 0 11 14" aria-hidden="true"><path d="M5.5 13.2S10 8.4 10 5.3A4.5 4.5 0 0 0 1 5.3c0 3.1 4.5 7.9 4.5 7.9z" fill="none" stroke="currentColor" stroke-width="1.1"/><circle cx="5.5" cy="5.3" r="1.6" fill="currentColor"/></svg>';
+
+  function esc(s) {
+    return String(s == null ? "" : s).replace(/[&<>"']/g, function (c) {
+      return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c];
+    });
+  }
+  function zimmer(z) { var n = Math.floor(z); return (z - n === 0.5) ? (n ? n : "") + "½" : String(z); }
+  function preis(p) { return p ? "CHF " + nf.format(p) : "Preis auf Anfrage"; }
+
+  var typen = ["Alle"];
+  objekte.forEach(function (o) { if (o.typ && typen.indexOf(o.typ) < 0) typen.push(o.typ); });
+  chipsEl.innerHTML = typen.map(function (t) {
+    return '<button type="button" class="lx-chip" data-typ="' + esc(t) + '" aria-pressed="' + (t === state.typ) + '">' +
+      esc(t === "Alle" ? "Alle" : (PLURAL[t] || t)) + "</button>";
+  }).join("");
+  chipsEl.addEventListener("click", function (e) {
+    var b = e.target.closest(".lx-chip");
+    if (!b) return;
+    state.typ = b.getAttribute("data-typ");
+    $$(".lx-chip", chipsEl).forEach(function (x) { x.setAttribute("aria-pressed", String(x === b)); });
+    renderListings();
+  });
+  sortEl.addEventListener("change", function () { state.sort = sortEl.value; renderListings(); });
+
+  function card(o, i) {
+    var href = o.link || ((C.kontaktLink || "#") + (String(C.kontaktLink || "").indexOf("?") < 0 ? "?" : "&") + "objekt=" + encodeURIComponent(o.titel || ""));
+    var facts = [];
+    if (o.zimmer) facts.push("<li><b>" + zimmer(o.zimmer) + "</b> Zimmer</li>");
+    if (o.wohnflaeche) facts.push("<li><b>" + nf.format(o.wohnflaeche) + "</b> m² Wohnfläche</li>");
+    if (o.grundstueck) facts.push("<li><b>" + nf.format(o.grundstueck) + "</b> m² Grundstück</li>");
+    return '<a class="lx-card lx-reveal" style="transition-delay:' + (i % 3) * 90 + 'ms" href="' + esc(href) + '">' +
+      '<div class="lx-card__media">' +
+        (o.bild ? '<img src="' + esc(o.bild) + '" alt="' + esc((o.titel || "") + " – " + (o.ort || "")) + '" loading="lazy" decoding="async" width="1200" height="800" onerror="this.remove()">' : "") +
+        (o.badge ? '<span class="lx-badge">' + esc(o.badge) + "</span>" : "") +
+      "</div>" +
+      '<div class="lx-card__body">' +
+        '<p class="lx-card__loc">' + PIN + esc(o.ort) + (o.typ ? " · " + esc(o.typ) : "") + "</p>" +
+        '<h3 class="lx-card__title">' + esc(o.titel) + "</h3>" +
+        '<ul class="lx-card__facts">' + facts.join("") + "</ul>" +
+        '<div class="lx-card__foot"><span class="lx-price">' + preis(o.preis) + '</span><span class="lx-more">Details</span></div>' +
+      "</div></a>";
+  }
+
+  function renderListings() {
+    var list = objekte.filter(function (o) { return state.typ === "Alle" || o.typ === state.typ; });
+    var big = Number.MAX_SAFE_INTEGER;
+    if (state.sort === "preis-auf") list.sort(function (a, b) { return (a.preis || big) - (b.preis || big); });
+    if (state.sort === "preis-ab") list.sort(function (a, b) { return (b.preis || big) - (a.preis || big); });
+    if (state.sort === "flaeche") list.sort(function (a, b) { return (b.wohnflaeche || 0) - (a.wohnflaeche || 0); });
+    countEl.textContent = list.length + (list.length === 1 ? " Objekt" : " Objekte");
+    grid.innerHTML = list.length ? list.map(card).join("") : '<p class="lx-empty">Aktuell keine Objekte in dieser Kategorie – kontaktieren Sie uns für diskrete Angebote.</p>';
+    observeReveals();
+  }
+
+  /* ---------- 5. Einblenden beim Scrollen ---------- */
+  var io = ("IntersectionObserver" in window) ? new IntersectionObserver(function (entries) {
+    entries.forEach(function (e) {
+      if (e.isIntersecting) { e.target.classList.add("is-in"); io.unobserve(e.target); }
+    });
+  }, { rootMargin: "0px 0px -8% 0px" }) : null;
+  function observeReveals() {
+    $$(".lx-reveal:not(.is-in)").forEach(function (el) { io ? io.observe(el) : el.classList.add("is-in"); });
+  }
+  renderListings();
+})();
+</script>
+
+</div></div></div></div></div></section>
+<section class="page-section"><footer>Squarespace-Footer · Vorschau</footer></section>
+</article></main>
+</body>
+</html>
