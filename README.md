@@ -49,3 +49,8 @@ Danach in `app.json` beim `expo-router`-Plugin die `origin` auf die Deploy-URL s
 - Die Preise sind KI-Schätzungen ohne Gewähr. Kilometerstand, Zustand und Ausstattung kann die
   KI auf einem Foto nicht sehen.
 - Jede Erkennung ist ein API-Aufruf und kostet ein paar Rappen.
+
+## Weiteres Projekt in diesem Repo
+
+- [`windows12/`](windows12/README.md): „Windows 12“ als Desktop-Oberfläche in C# (.NET 10, Avalonia) –
+  unabhängig von der Expo-App, Start mit `cd windows12 && dotnet run`.

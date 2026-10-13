@@ -1,0 +1,110 @@
+<Application xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             x:Class="Windows12.App"
+             RequestedThemeVariant="Dark">
+
+    <Application.Resources>
+        <ResourceDictionary>
+            <!-- Akzentfarbe: wird zur Laufzeit von Theme.Apply() überschrieben -->
+            <SolidColorBrush x:Key="W12.Accent" Color="#0078D4" />
+            <SolidColorBrush x:Key="W12.AccentSoft" Color="#330078D4" />
+
+            <ResourceDictionary.ThemeDictionaries>
+                <ResourceDictionary x:Key="Light">
+                    <SolidColorBrush x:Key="W12.Panel" Color="#EBF4F4F6" />
+                    <SolidColorBrush x:Key="W12.PanelSolid" Color="#FFF3F3F3" />
+                    <SolidColorBrush x:Key="W12.PanelBorder" Color="#1F000000" />
+                    <SolidColorBrush x:Key="W12.Window" Color="#FFFAFAFA" />
+                    <SolidColorBrush x:Key="W12.TitleBar" Color="#FFEEF1F6" />
+                    <SolidColorBrush x:Key="W12.Card" Color="#FFFFFFFF" />
+                    <SolidColorBrush x:Key="W12.CardAlt" Color="#FFF3F3F3" />
+                    <SolidColorBrush x:Key="W12.Text" Color="#FF1B1B1B" />
+                    <SolidColorBrush x:Key="W12.SubText" Color="#A0000000" />
+                    <SolidColorBrush x:Key="W12.Hover" Color="#12000000" />
+                    <SolidColorBrush x:Key="W12.Pressed" Color="#08000000" />
+                    <SolidColorBrush x:Key="W12.Divider" Color="#14000000" />
+                    <SolidColorBrush x:Key="W12.Overlay" Color="#66000000" />
+                </ResourceDictionary>
+                <ResourceDictionary x:Key="Dark">
+                    <SolidColorBrush x:Key="W12.Panel" Color="#E0202024" />
+                    <SolidColorBrush x:Key="W12.PanelSolid" Color="#FF202020" />
+                    <SolidColorBrush x:Key="W12.PanelBorder" Color="#2EFFFFFF" />
+                    <SolidColorBrush x:Key="W12.Window" Color="#FF1F1F1F" />
+                    <SolidColorBrush x:Key="W12.TitleBar" Color="#FF191A1D" />
+                    <SolidColorBrush x:Key="W12.Card" Color="#FF2B2B2B" />
+                    <SolidColorBrush x:Key="W12.CardAlt" Color="#FF262626" />
+                    <SolidColorBrush x:Key="W12.Text" Color="#FFFFFFFF" />
+                    <SolidColorBrush x:Key="W12.SubText" Color="#A8FFFFFF" />
+                    <SolidColorBrush x:Key="W12.Hover" Color="#17FFFFFF" />
+                    <SolidColorBrush x:Key="W12.Pressed" Color="#0DFFFFFF" />
+                    <SolidColorBrush x:Key="W12.Divider" Color="#1AFFFFFF" />
+                    <SolidColorBrush x:Key="W12.Overlay" Color="#80000000" />
+                </ResourceDictionary>
+            </ResourceDictionary.ThemeDictionaries>
+        </ResourceDictionary>
+    </Application.Resources>
+
+    <Application.Styles>
+        <FluentTheme />
+
+        <!-- Flache Schaltflächen (Taskleiste, Startmenü, Symbolleisten) -->
+        <Style Selector="Button.flat">
+            <Setter Property="Background" Value="Transparent" />
+            <Setter Property="BorderThickness" Value="0" />
+            <Setter Property="CornerRadius" Value="6" />
+            <Setter Property="Foreground" Value="{DynamicResource W12.Text}" />
+            <Setter Property="HorizontalContentAlignment" Value="Stretch" />
+            <Setter Property="VerticalContentAlignment" Value="Center" />
+        </Style>
+        <Style Selector="Button.flat:pointerover /template/ ContentPresenter#PART_ContentPresenter">
+            <Setter Property="Background" Value="{DynamicResource W12.Hover}" />
+            <Setter Property="Foreground" Value="{DynamicResource W12.Text}" />
+        </Style>
+        <Style Selector="Button.flat:pressed /template/ ContentPresenter#PART_ContentPresenter">
+            <Setter Property="Background" Value="{DynamicResource W12.Pressed}" />
+        </Style>
+        <Style Selector="Button.flat.selected /template/ ContentPresenter#PART_ContentPresenter">
+            <Setter Property="Background" Value="{DynamicResource W12.Hover}" />
+        </Style>
+
+        <!-- Akzent-Schaltfläche -->
+        <Style Selector="Button.accent">
+            <Setter Property="Background" Value="{DynamicResource W12.Accent}" />
+            <Setter Property="Foreground" Value="White" />
+            <Setter Property="CornerRadius" Value="6" />
+        </Style>
+        <Style Selector="Button.accent:pointerover /template/ ContentPresenter#PART_ContentPresenter">
+            <Setter Property="Background" Value="{DynamicResource W12.Accent}" />
+            <Setter Property="Foreground" Value="White" />
+            <Setter Property="Opacity" Value="0.9" />
+        </Style>
+
+        <!-- Schließen-Schaltfläche der Fenster -->
+        <Style Selector="Button.close:pointerover /template/ ContentPresenter#PART_ContentPresenter">
+            <Setter Property="Background" Value="#C42B1C" />
+            <Setter Property="Foreground" Value="White" />
+        </Style>
+
+        <!-- Schnelleinstellungs-Kacheln -->
+        <Style Selector="ToggleButton.tile">
+            <Setter Property="CornerRadius" Value="8" />
+            <Setter Property="Background" Value="{DynamicResource W12.Hover}" />
+            <Setter Property="BorderThickness" Value="0" />
+        </Style>
+        <Style Selector="ToggleButton.tile:checked /template/ ContentPresenter#PART_ContentPresenter">
+            <Setter Property="Background" Value="{DynamicResource W12.Accent}" />
+            <Setter Property="Foreground" Value="White" />
+        </Style>
+
+        <Style Selector="ListBox">
+            <Setter Property="Background" Value="Transparent" />
+        </Style>
+
+        <!-- Kompaktere Registerkarten (Task-Manager, Uhr) -->
+        <Style Selector="TabItem">
+            <Setter Property="FontSize" Value="15" />
+            <Setter Property="MinHeight" Value="40" />
+            <Setter Property="Padding" Value="12,0" />
+        </Style>
+    </Application.Styles>
+</Application>
