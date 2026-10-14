@@ -3,7 +3,7 @@
     "name": "Autoerkenner",
     "slug": "autoerkenner",
     "version": "1.0.0",
-    "orientation": "portrait",
+    "orientation": "default",
     "icon": "./assets/images/icon.png",
     "scheme": "autoerkenner",
     "userInterfaceStyle": "automatic",
@@ -38,6 +38,12 @@
         {
           "cameraPermission": "Autoerkenner braucht die Kamera, um Autos zu fotografieren und zu erkennen.",
           "photosPermission": "Autoerkenner braucht Zugriff auf deine Fotos, um Autos auf bestehenden Bildern zu erkennen."
+        }
+      ],
+      [
+        "expo-screen-orientation",
+        {
+          "initialOrientation": "PORTRAIT_UP"
         }
       ]
     ],
