@@ -81,6 +81,8 @@ keine Original-Dateien von Mojang enthalten.
   Zombies, Creeper-Zischen, Explosionen (synthetisiert; Lautstärke in den Optionen)
 - **Überleben**: Leben, Hunger/Sättigung, Regeneration, Verhungern, Ertrinken (Luftblasen),
   Kaktusschaden, Tod mit Item-Drop und Wiederbeleben; **Essen** (Apfel, Brot, Fleisch roh/gebraten)
+- **Rüstung** aus Leder, Eisen, Gold und Diamant (Helm, Brustpanzer, Hose, Stiefel) mit
+  Rüstungsleiste, Schadensreduktion und Haltbarkeit – anziehen per Inventar oder Benutzen
 - **Mobs**: Schweine, Kühe, Schafe (Fleisch, Leder, Wolle), Zombies (verbrennen in der Sonne),
   Creeper (explodieren und sprengen Blöcke) – mit KI, Spawning bei Dunkelheit, Rückstoß, Kritische Treffer
 - **Welt-Simulation**: fließendes Wasser (inkl. unendlicher Quellen), fallender Sand/Kies,
@@ -100,7 +102,7 @@ keine Original-Dateien von Mojang enthalten.
 | Abbauen / Angreifen | Halten / auf Mob tippen | Linke Maustaste |
 | Bauen / Benutzen (Tür, Bett, Werkbank …) | Tippen | Rechte Maustaste |
 | Essen | Mit Essen in der Hand halten | Rechte Maustaste halten |
-| Springen / Fliegen | ⇧ (Kreativ: 2× = Fliegen) | Leertaste |
+| Springen / Fliegen | ⇧ (Kreativ: 2× = Fliegen), Stufen automatisch | Leertaste |
 | Schleichen | ● | Shift |
 | Inventar | ••• neben der Hotbar | E |
 | Item wegwerfen | Hotbar-Slot halten | Q |

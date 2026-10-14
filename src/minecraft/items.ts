@@ -33,6 +33,24 @@ export const TOOL_KINDS = ['pickaxe', 'axe', 'shovel', 'sword', 'hoe'] as const;
 export type ToolTier = (typeof TOOL_TIERS)[number];
 export type ToolKind = (typeof TOOL_KINDS)[number];
 
+export const ARMOR_TIERS = ['leather', 'iron', 'golden', 'diamond'] as const;
+export const ARMOR_PIECES = ['helmet', 'chestplate', 'leggings', 'boots'] as const;
+export type ArmorTier = (typeof ARMOR_TIERS)[number];
+export type ArmorPiece = (typeof ARMOR_PIECES)[number];
+
+export function armorId(tier: ArmorTier, piece: ArmorPiece) {
+  return 340 + ARMOR_TIERS.indexOf(tier) * 4 + ARMOR_PIECES.indexOf(piece);
+}
+
+/** Armor points per piece (helmet, chestplate, leggings, boots) and durability multiplier, as in Minecraft. */
+const ARMOR_STATS: Record<ArmorTier, { points: number[]; durability: number; names: string[] }> = {
+  leather: { points: [1, 3, 2, 1], durability: 5, names: ['Lederkappe', 'Lederjacke', 'Lederhose', 'Lederstiefel'] },
+  iron: { points: [2, 6, 5, 2], durability: 15, names: ['Eisenhelm', 'Eisenharnisch', 'Eisenbeinschutz', 'Eisenstiefel'] },
+  golden: { points: [2, 5, 3, 1], durability: 7, names: ['Goldhelm', 'Goldharnisch', 'Goldbeinschutz', 'Goldstiefel'] },
+  diamond: { points: [3, 8, 6, 3], durability: 33, names: ['Diamanthelm', 'Diamantharnisch', 'Diamantbeinschutz', 'Diamantstiefel'] },
+};
+const ARMOR_BASE_DURABILITY = [11, 16, 15, 13];
+
 export function toolId(tier: ToolTier, kind: ToolKind) {
   return 300 + TOOL_TIERS.indexOf(tier) * 5 + TOOL_KINDS.indexOf(kind);
 }
@@ -77,6 +95,8 @@ export interface ItemDef {
   food?: { hunger: number; saturation: number };
   /** Burn time in a furnace, in ticks. */
   fuel?: number;
+  /** slot: 0 helmet, 1 chestplate, 2 leggings, 3 boots */
+  armor?: { slot: number; points: number; durability: number };
 }
 
 export const ITEMS = new Map<number, ItemDef>();
@@ -149,6 +169,20 @@ addItem({ id: I.GUNPOWDER, key: 'gunpowder', name: 'Schwarzpulver', texture: til
 addItem({ id: I.LEATHER, key: 'leather', name: 'Leder', texture: tile('leather') });
 addItem({ id: I.BUCKET, key: 'bucket', name: 'Eimer', texture: tile('bucket'), maxStack: 16 });
 addItem({ id: I.WATER_BUCKET, key: 'water_bucket', name: 'Wassereimer', texture: tile('water_bucket'), maxStack: 1 });
+
+for (const tier of ARMOR_TIERS) {
+  ARMOR_PIECES.forEach((piece, slot) => {
+    const stats = ARMOR_STATS[tier];
+    addItem({
+      id: armorId(tier, piece),
+      key: `${tier}_${piece}`,
+      name: stats.names[slot],
+      texture: tile(`${tier}_${piece}`),
+      maxStack: 1,
+      armor: { slot, points: stats.points[slot], durability: ARMOR_BASE_DURABILITY[slot] * stats.durability },
+    });
+  });
+}
 
 for (const tier of TOOL_TIERS) {
   for (const kind of TOOL_KINDS) {

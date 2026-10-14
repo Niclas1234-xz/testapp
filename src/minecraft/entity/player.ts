@@ -1,5 +1,6 @@
 import { BLOCKS } from '../blocks';
 import { Inventory, type Slot } from '../inventory';
+import { item } from '../items';
 import type { World } from '../world/world';
 import { Living } from './entities';
 import { Entity } from './physics';
@@ -26,6 +27,7 @@ export interface PlayerSave {
   exhaustion: number;
   air: number;
   inventory: Slot[];
+  armor?: Slot[];
   selected: number;
   flying: boolean;
 }
@@ -40,6 +42,10 @@ export class Player extends Living {
   air = MAX_AIR;
   foodTimer = 0;
   readonly inventory = new Inventory(36);
+  /** Helmet, chestplate, leggings, boots. */
+  readonly armor: Slot[] = [null, null, null, null];
+  /** Called when an armor piece breaks. */
+  onArmorBreak?: (id: number) => void;
   selected = 0;
   creative = false;
   flying = false;
@@ -74,8 +80,31 @@ export class Player extends Living {
     if (!this.creative) this.exhaustion = Math.min(40, this.exhaustion + v);
   }
 
-  override damage(amount: number, fromX?: number, fromZ?: number, knockback = 0.4): boolean {
+  armorPoints() {
+    let points = 0;
+    for (const s of this.armor) if (s) points += item(s.id)?.armor?.points ?? 0;
+    return points;
+  }
+
+  /** Damage; armor reduces it by 4 % per point (Minecraft 1.8) unless bypassed (fall, drowning, hunger). */
+  override damage(amount: number, fromX?: number, fromZ?: number, knockback = 0.4, bypassArmor = false): boolean {
     if (this.creative || this.health <= 0) return false;
+    if (!bypassArmor && this.hurtCooldown <= 0) {
+      const points = this.armorPoints();
+      if (points > 0) {
+        amount = (amount * (25 - Math.min(20, points))) / 25;
+        const wear = Math.max(1, Math.floor(amount / 4));
+        this.armor.forEach((s, i) => {
+          if (!s) return;
+          s.damage += wear;
+          const max = item(s.id)?.armor?.durability ?? 1;
+          if (s.damage >= max) {
+            this.armor[i] = null;
+            this.onArmorBreak?.(s.id);
+          }
+        });
+      }
+    }
     const hit = super.damage(amount, fromX, fromZ, knockback);
     if (hit) {
       this.addExhaustion(0.1);
@@ -87,7 +116,7 @@ export class Player extends Living {
   protected override onLand(distance: number) {
     if (this.creative || this.inWater) return;
     const dmg = Math.ceil(distance - 3);
-    if (dmg > 0) this.damage(dmg);
+    if (dmg > 0) this.damage(dmg, undefined, undefined, 0, true);
   }
 
   heal(amount: number) {
@@ -198,7 +227,7 @@ export class Player extends Living {
     } else if (this.food <= 0) {
       if (++this.foodTimer >= 80) {
         const minHealth = this.difficulty >= 3 ? 0 : this.difficulty === 2 ? 1 : 10;
-        if (this.health > minHealth) this.damage(1);
+        if (this.health > minHealth) this.damage(1, undefined, undefined, 0, true);
         this.foodTimer = 0;
       }
     } else this.foodTimer = 0;
@@ -209,7 +238,7 @@ export class Player extends Living {
       if (this.air <= -20) {
         this.air = 0;
         this.hurtCooldown = 0;
-        this.damage(2);
+        this.damage(2, undefined, undefined, 0, true);
       }
     } else this.air = Math.min(MAX_AIR, this.air + 5);
   }
@@ -245,6 +274,7 @@ export class Player extends Living {
       exhaustion: this.exhaustion,
       air: this.air,
       inventory: this.inventory.slots.map((s) => (s ? { ...s } : null)),
+      armor: this.armor.map((s) => (s ? { ...s } : null)),
       selected: this.selected,
       flying: this.flying,
     };
@@ -261,6 +291,9 @@ export class Player extends Living {
     this.air = s.air;
     s.inventory.forEach((slot, i) => {
       if (i < this.inventory.slots.length) this.inventory.slots[i] = slot ? { ...slot } : null;
+    });
+    s.armor?.forEach((slot, i) => {
+      if (i < 4) this.armor[i] = slot ? { ...slot } : null;
     });
     this.selected = s.selected;
     this.flying = s.flying;

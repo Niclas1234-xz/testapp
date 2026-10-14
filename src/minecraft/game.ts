@@ -63,6 +63,7 @@ export interface Controls {
 export interface UiSnapshot {
   version: number;
   inventory: Slot[];
+  armor: Slot[];
   craft: Slot[];
   craftSize: number;
   result: ItemStack | null;
@@ -75,6 +76,7 @@ export interface UiSnapshot {
 
 export interface HudState {
   health: number;
+  armor: number;
   food: number;
   air: number;
   showAir: boolean;
@@ -209,6 +211,10 @@ export class Game {
       this.player.setPos(meta.spawn.x, meta.spawn.y + 0.5, meta.spawn.z);
       if (this.player.creative) this.player.flying = false;
     }
+    this.player.onArmorBreak = (id) => {
+      this.showToast(`${itemName(id)} ist zerbrochen`);
+      this.emit();
+    };
     this.player.onDamage = () => {
       this.hurtCamera = 10;
       sound.play('hurt', 0.9);
@@ -269,6 +275,7 @@ export class Game {
     }
     return {
       health: p.health,
+      armor: p.armorPoints(),
       food: p.food,
       air: p.air,
       showAir: headWater || p.air < MAX_AIR,
@@ -574,7 +581,7 @@ export class Game {
       p.tickStats(this.world);
       if (p.y < -64) {
         p.hurtCooldown = 0;
-        p.damage(4);
+        p.damage(4, undefined, undefined, 0, true);
       }
       this.tickInteraction();
       this.tickCactus();
@@ -633,11 +640,16 @@ export class Game {
   private onDeath() {
     const p = this.player;
     this.deathMessage = p.y < -64 ? 'Du bist aus der Welt gefallen' : p.air <= 0 ? 'Du bist ertrunken' : 'Du bist gestorben!';
-    // Drop the whole inventory.
+    // Drop the whole inventory and armor.
     for (let i = 0; i < p.inventory.slots.length; i++) {
       const s = p.inventory.slots[i];
       if (s) this.dropItem(p.x, p.y + 1, p.z, s, true, true);
       p.inventory.slots[i] = null;
+    }
+    for (let i = 0; i < 4; i++) {
+      const s = p.armor[i];
+      if (s) this.dropItem(p.x, p.y + 1, p.z, s, true, true);
+      p.armor[i] = null;
     }
     this.closeScreen();
     this.screen = { kind: 'death' };
@@ -1035,6 +1047,18 @@ export class Game {
     }
     if (!held || !def) return;
 
+    // Right-click with armor equips it (swaps with the worn piece).
+    if (def.armor) {
+      const slot = def.armor.slot;
+      const worn = p.armor[slot];
+      p.armor[slot] = held;
+      p.inventory.slots[p.selected] = worn;
+      this.swing();
+      this.playAt('dig_cloth', p.x, p.eyeY(), p.z, 0.8);
+      this.emit();
+      return;
+    }
+
     // Buckets
     if (held.id === I.BUCKET && t && this.world.getBlock(t.x, t.y, t.z) === B.WATER && this.world.getMeta(t.x, t.y, t.z) === 0) {
       this.world.setBlock(t.x, t.y, t.z, B.AIR);
@@ -1221,6 +1245,7 @@ export class Game {
     this.snapshot = {
       version: this.uiVersion,
       inventory: copy(this.player.inventory.slots),
+      armor: copy(this.player.armor),
       craft: copy(this.craftGrid),
       craftSize: this.craftSize,
       result: this.craftResult(),
@@ -1530,8 +1555,18 @@ export class Game {
   }
 
   /** Slot interaction from the UI. */
-  clickSlot(container: 'inv' | 'craft' | 'chest' | 'furnace', index: number, right: boolean) {
+  clickSlot(container: 'inv' | 'craft' | 'chest' | 'furnace' | 'armor', index: number, right: boolean) {
     let slots: Slot[] | null = null;
+    if (container === 'armor') {
+      // Only the matching armor piece fits into each slot.
+      const c = this.cursor;
+      if (c && item(c.id)?.armor?.slot !== index) return;
+      const worn = this.player.armor[index];
+      this.player.armor[index] = c;
+      this.cursor = worn;
+      this.emit();
+      return;
+    }
     if (container === 'inv') slots = this.player.inventory.slots;
     else if (container === 'craft') slots = this.craftGrid;
     else {
@@ -1566,7 +1601,7 @@ export class Game {
   }
 
   /** Tap on a slot: click, or quick-move on shift-click / double tap. */
-  slotTap(container: 'inv' | 'craft' | 'chest' | 'furnace', index: number, shift: boolean) {
+  slotTap(container: 'inv' | 'craft' | 'chest' | 'furnace' | 'armor', index: number, shift: boolean) {
     const key = `${container}:${index}`;
     const now = Date.now();
     if (shift && !this.cursor) {
@@ -1644,13 +1679,24 @@ export class Game {
   }
 
   /** Quick-move a stack between hotbar/inventory or into/out of a container (shift-click). */
-  quickMove(container: 'inv' | 'chest' | 'furnace' | 'craft', index: number) {
+  quickMove(container: 'inv' | 'chest' | 'furnace' | 'craft' | 'armor', index: number) {
     const p = this.player;
     const be = this.containerEntity();
+    if (container === 'armor') {
+      const s = p.armor[index];
+      if (!s) return;
+      if (p.inventory.add(s) === 0) p.armor[index] = null;
+      this.emit();
+      return;
+    }
     if (container === 'inv') {
       const s = p.inventory.slots[index];
       if (!s) return;
-      if (be?.type === 'chest') {
+      const armorSlot = item(s.id)?.armor?.slot;
+      if (!be && armorSlot !== undefined && !p.armor[armorSlot]) {
+        p.armor[armorSlot] = s;
+        p.inventory.slots[index] = null;
+      } else if (be?.type === 'chest') {
         p.inventory.slots[index] = null;
         const left = addTo(be.items, s);
         if (left > 0) p.inventory.slots[index] = { ...s, count: left };

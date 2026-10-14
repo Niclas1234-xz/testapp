@@ -109,5 +109,6 @@ export function takeOutput(output: ItemStack, cursor: Slot): { cursor: Slot; tak
 }
 
 export function durabilityOf(s: ItemStack) {
-  return item(s.id)?.tool?.durability ?? 0;
+  const def = item(s.id);
+  return def?.tool?.durability ?? def?.armor?.durability ?? 0;
 }

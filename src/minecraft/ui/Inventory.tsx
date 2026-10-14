@@ -16,7 +16,7 @@ function useSnapshot(game: Game): UiSnapshot {
   );
 }
 
-type Container = 'inv' | 'craft' | 'chest' | 'furnace';
+type Container = 'inv' | 'craft' | 'chest' | 'furnace' | 'armor';
 
 /** Container screens: player inventory, crafting table, furnace, chest and creative inventory. */
 export function InventoryScreen({ game, screen, width, height }: { game: Game; screen: Screen; width: number; height: number }) {
@@ -26,7 +26,7 @@ export function InventoryScreen({ game, screen, width, height }: { game: Game; s
   if (snap.creative && screen.kind === 'inventory') return <CreativeScreen game={game} snap={snap} width={width} height={height} />;
 
   const rows =
-    screen.kind === 'chest' ? 7.6 : screen.kind === 'furnace' ? 7.4 : screen.kind === 'crafting' ? 7.6 : 7.2;
+    screen.kind === 'chest' ? 7.6 : screen.kind === 'furnace' ? 7.4 : screen.kind === 'crafting' ? 7.6 : 8.6;
   const size = Math.floor(Math.min(42, (height - 70) / rows, (width - 60) / 9.6));
 
   const tap = (container: Container, index: number, slot: Slot) => {
@@ -81,11 +81,18 @@ export function InventoryScreen({ game, screen, width, height }: { game: Game; s
     top = (
       <View style={st.craftRow}>
         {screen.kind === 'inventory' && (
-          <View style={[st.playerBox, { width: size * 3, height: size * 2.6 }]}>
-            <McText size={11} color="#404040">
-              Steve
-            </McText>
-          </View>
+          <>
+            <View>
+              {snap.armor.map((sl, i) => (
+                <ItemSlot key={i} slot={sl} size={size} onPress={() => tap('armor', i, sl)} />
+              ))}
+            </View>
+            <View style={[st.playerBox, { width: size * 2.6, height: size * 4 }]}>
+              <McText size={11} color="#404040">
+                Steve
+              </McText>
+            </View>
+          </>
         )}
         {grid(snap.craft, 'craft', 0, n * n, n)}
         <McText size={size * 0.6} color="#8B8B8B" style={st.arrow}>

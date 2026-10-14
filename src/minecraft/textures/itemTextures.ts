@@ -428,6 +428,83 @@ export const ITEM_TEXTURES: Record<string, Gen> = {
   ),
 };
 
+const ARMOR_MATERIALS: Record<string, Material> = {
+  leather: { o: hex(0x3b1d0c), d: hex(0x6a3a1c), m: hex(0x8b5a2b), l: hex(0xb07a42) },
+  iron: TOOL_MATERIALS.iron,
+  golden: TOOL_MATERIALS.golden,
+  diamond: TOOL_MATERIALS.diamond,
+};
+
+const ARMOR_SHAPES: Record<string, string[]> = {
+  helmet: [
+    '................',
+    '................',
+    '................',
+    '................',
+    '....mmmmmmmm....',
+    '...mmmmmmmmmm...',
+    '...mmmmmmmmmm...',
+    '...mmm....mmm...',
+    '...mm......mm...',
+    '...mm......mm...',
+    '................',
+  ],
+  chestplate: [
+    '................',
+    '..mmmm....mmmm..',
+    '..mmmmm..mmmmm..',
+    '..mmmmmmmmmmmm..',
+    '..mmmmmmmmmmmm..',
+    '...mmmmmmmmmm...',
+    '....mmmmmmmm....',
+    '....mmmmmmmm....',
+    '....mmmmmmmm....',
+    '....mmmmmmmm....',
+    '....mmmmmmmm....',
+    '....mmmmmmmm....',
+    '................',
+  ],
+  leggings: [
+    '................',
+    '................',
+    '....mmmmmmmm....',
+    '....mmmmmmmm....',
+    '....mmmmmmmm....',
+    '....mmm..mmm....',
+    '....mmm..mmm....',
+    '....mmm..mmm....',
+    '....mmm..mmm....',
+    '....mmm..mmm....',
+    '....mmm..mmm....',
+    '....mmm..mmm....',
+    '................',
+  ],
+  boots: [
+    '................',
+    '................',
+    '................',
+    '................',
+    '................',
+    '................',
+    '...mmm....mmm...',
+    '...mmm....mmm...',
+    '...mmm....mmm...',
+    '..mmmm....mmmm..',
+    '..mmmm....mmmm..',
+    '................',
+  ],
+};
+
+function armor(material: Material, shape: string[]) {
+  const t = new Tex();
+  const mask = maskWhere((x, y) => shape[Math.floor(y)]?.[Math.floor(x)] === 'm');
+  paintShape(t, mask, material);
+  return t;
+}
+
+for (const [mat, colors] of Object.entries(ARMOR_MATERIALS))
+  for (const [piece, shape] of Object.entries(ARMOR_SHAPES)) ITEM_TEXTURES[`${mat}_${piece}`] = () => armor(colors, shape);
+
 /** Textures for mobs, the player, sky and particles. */
 function skin(rng: Rng, base: RGB, spread = 0.12) {
   const t = new Tex();

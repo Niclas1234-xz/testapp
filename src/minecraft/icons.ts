@@ -122,6 +122,18 @@ const HUD_SPRITES: Record<string, { rows: string[]; palette: Record<string, numb
     rows: ['....OOO..', '...OkkkO.', '..OkkkkkO', '..OkkkkkO', '..OOkkkO.', '.OkOOOO..', 'OkkO.....', 'OkO......', '.O.......'],
     palette: { O: 0x2a1000, k: 0x3a2410 },
   },
+  armor: {
+    rows: ['OOO...OOO', 'OwlO.OllO', 'OllOOOllO', 'OlllllllO', '.OlllllO.', '.OlllllO.', '.OlllllO.', '.OOOOOOO.'],
+    palette: { O: 0x1f1f1f, l: 0xc6c6c6, w: 0xffffff },
+  },
+  armor_half: {
+    rows: ['OOO...OOO', 'OwlO.OkkO', 'OllOOOkkO', 'OllllkkkO', '.OlllkkO.', '.OlllkkO.', '.OlllkkO.', '.OOOOOOO.'],
+    palette: { O: 0x1f1f1f, l: 0xc6c6c6, w: 0xffffff, k: 0x4a4a4a },
+  },
+  armor_empty: {
+    rows: ['OOO...OOO', 'OkkO.OkkO', 'OkkOOOkkO', 'OkkkkkkkO', '.OkkkkkO.', '.OkkkkkO.', '.OkkkkkO.', '.OOOOOOO.'],
+    palette: { O: 0x1f1f1f, k: 0x4a4a4a },
+  },
   bubble: {
     rows: ['..OOOOO..', '.OwwbbbO.', 'OwwbbbbbO', 'OwbbbbbbO', 'ObbbbbbbO', 'ObbbbbbbO', '.ObbbbbO.', '..OOOOO..'],
     palette: { O: 0x1a3a8a, w: 0xffffff, b: 0x4a8af0 },

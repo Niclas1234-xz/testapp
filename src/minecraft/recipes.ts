@@ -1,5 +1,5 @@
 import { B } from './blocks';
-import { I, item, toolId, type ToolTier } from './items';
+import { armorId, I, item, toolId, type ArmorTier, type ToolTier } from './items';
 import type { ItemStack, Slot } from './inventory';
 
 type Ingredient = number | readonly number[];
@@ -63,6 +63,21 @@ for (const [tier, material] of Object.entries(TOOL_MATERIAL) as [ToolTier, Ingre
   shaped(['M', 'S', 'S'], keys, toolId(tier, 'shovel'));
   shaped(['M', 'M', 'S'], keys, toolId(tier, 'sword'));
   shaped(['MM', ' S', ' S'], keys, toolId(tier, 'hoe'));
+}
+
+const ARMOR_MATERIAL: Record<ArmorTier, Ingredient> = {
+  leather: I.LEATHER,
+  iron: I.IRON_INGOT,
+  golden: I.GOLD_INGOT,
+  diamond: I.DIAMOND,
+};
+
+for (const [tier, material] of Object.entries(ARMOR_MATERIAL) as [ArmorTier, Ingredient][]) {
+  const keys = { M: material };
+  shaped(['MMM', 'M M'], keys, armorId(tier, 'helmet'));
+  shaped(['M M', 'MMM', 'MMM'], keys, armorId(tier, 'chestplate'));
+  shaped(['MMM', 'M M', 'M M'], keys, armorId(tier, 'leggings'));
+  shaped(['M M', 'M M'], keys, armorId(tier, 'boots'));
 }
 
 function matches(ing: Ingredient | undefined, s: Slot) {

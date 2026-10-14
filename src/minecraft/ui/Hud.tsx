@@ -11,7 +11,7 @@ export function hudSlotSize(width: number, height: number) {
   return Math.round(Math.min(46, Math.max(28, Math.min((width - 340) / 10, height / 8.5))));
 }
 
-function StatRow({ value, kind, size, reverse }: { value: number; kind: 'heart' | 'food' | 'bubble'; size: number; reverse?: boolean }) {
+function StatRow({ value, kind, size, reverse }: { value: number; kind: 'heart' | 'food' | 'bubble' | 'armor'; size: number; reverse?: boolean }) {
   const icons = [];
   for (let i = 0; i < 10; i++) {
     const v = value - i * 2;
@@ -74,7 +74,8 @@ export function Hud({
         )}
         {!hud.creative && (
           <View style={[s.stats, { width: slot * 9 }]} pointerEvents="none">
-            <View>
+            <View style={s.leftStats}>
+              {hud.armor > 0 && <StatRow value={hud.armor} kind="armor" size={icon} />}
               <StatRow value={Math.ceil(hud.health)} kind="heart" size={icon} />
             </View>
             <View style={s.rightStats}>
@@ -158,6 +159,7 @@ const s = StyleSheet.create({
   toast: { marginBottom: 6 },
   stats: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-end', marginBottom: 3 },
   rightStats: { alignItems: 'flex-end', gap: 2 },
+  leftStats: { gap: 2 },
   row: { flexDirection: 'row' },
   rowReverse: { flexDirection: 'row-reverse' },
   flying: { marginBottom: 4 },
