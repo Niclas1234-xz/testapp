@@ -1,6 +1,7 @@
 import {
   B,
   block,
+  DOOR_UPPER,
   FACE_DIRS,
   IS_OPAQUE,
   IS_SOLID,
@@ -354,6 +355,20 @@ export class World {
       case B.WHEAT:
         if (this.getBlock(x, y - 1, z) !== B.FARMLAND) this.popBlock(x, y, z);
         return;
+      case B.OAK_DOOR: {
+        const meta = this.getMeta(x, y, z);
+        if (meta & DOOR_UPPER) {
+          if (this.getBlock(x, y - 1, z) !== B.OAK_DOOR) this.setBlock(x, y, z, B.AIR);
+        } else if (this.getBlock(x, y + 1, z) !== B.OAK_DOOR || !this.isSturdy(this.getBlock(x, y - 1, z))) {
+          this.popBlock(x, y, z);
+        }
+        return;
+      }
+      case B.LADDER: {
+        const [dx, dy, dz] = FACE_DIRS[this.getMeta(x, y, z) % 6];
+        if (!this.isSturdy(this.getBlock(x + dx, y + dy, z + dz))) this.popBlock(x, y, z);
+        return;
+      }
       case B.DEAD_BUSH: {
         const below = this.getBlock(x, y - 1, z);
         if (below !== B.SAND && below !== B.DIRT && below !== B.GRASS) this.popBlock(x, y, z);

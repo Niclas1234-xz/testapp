@@ -3,6 +3,7 @@ import { useEffect, useRef, useState, useSyncExternalStore } from 'react';
 import { AppState, BackHandler, Platform, StyleSheet, useWindowDimensions, View } from 'react-native';
 
 import type { Game } from '../game';
+import { sound } from '../sound';
 import { saveSettings, type Settings } from '../storage';
 import { Hud, LoadingScreen } from './Hud';
 import { InventoryScreen } from './Inventory';
@@ -29,6 +30,10 @@ export function GameView({ game, onQuit }: { game: Game; onQuit: () => void }) {
   const raf = useRef(0);
 
   useDesktopInput(game, canvas);
+
+  useEffect(() => {
+    sound.init();
+  }, []);
 
   // Expose the game for debugging in the browser console during development.
   useEffect(() => {

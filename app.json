@@ -45,6 +45,14 @@
         {
           "initialOrientation": "PORTRAIT_UP"
         }
+      ],
+      [
+        "expo-audio",
+        {
+          "microphonePermission": false,
+          "recordAudioAndroid": false,
+          "enableBackgroundPlayback": false
+        }
       ]
     ],
     "experiments": {

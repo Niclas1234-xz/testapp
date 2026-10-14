@@ -1,4 +1,4 @@
-import { block, DESTROY_TILES } from '../blocks';
+import { DESTROY_TILES } from '../blocks';
 import { SECTION_SIZE } from '../constants';
 import { mulberry32 } from '../rng';
 import { ATLAS_SIZE, buildAtlas, tile } from '../textures/atlas';
@@ -144,7 +144,6 @@ export interface CameraState {
   /** View bobbing offsets. */
   bobX: number;
   bobY: number;
-  bobAngle: number;
 }
 
 export interface MobRender {
@@ -735,7 +734,8 @@ export class Renderer {
     gl.bindBuffer(gl.ARRAY_BUFFER, this.dynamicBuffer);
     if (data.byteLength > this.dynamicCapacity) {
       this.dynamicCapacity = data.byteLength * 2;
-      gl.bufferData(gl.ARRAY_BUFFER, this.dynamicCapacity, gl.DYNAMIC_DRAW);
+      // Allocate with a zeroed array (some native GL bindings lack the size-only overload).
+      gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(this.dynamicCapacity / 4), gl.DYNAMIC_DRAW);
     }
     gl.bufferSubData(gl.ARRAY_BUFFER, 0, data);
   }
@@ -866,7 +866,7 @@ export class Renderer {
     const gl = this.gl;
     const gm = this.gpuMesh(`crack:${b.stage}`, () => {
       const t = DESTROY_TILES[Math.max(0, Math.min(9, b.stage))];
-      return { ...quadCube(t) };
+      return quadCube(t);
     });
     const m = mat4();
     translate(m, b.x + 0.5 - cam.x, b.y + 0.5 - cam.y, b.z + 0.5 - cam.z);
@@ -905,7 +905,6 @@ export class Renderer {
     for (const [ax, ay, az, bx, by, bz] of pts) data.push(ax, ay, az, ...c, bx, by, bz, ...c);
     identity(this.model);
     gl.enable(gl.BLEND);
-    gl.lineWidth(2);
     this.drawColor(new Float32Array(data), gl.LINES, this.model, this.viewProj, false);
     gl.disable(gl.BLEND);
   }
@@ -986,8 +985,6 @@ export class Renderer {
 
 /** Cube of 6 quads with one tile on all faces, centered at the origin. */
 function quadCube(tileIndex: number): MeshSource {
-  const def = block(1);
-  void def;
   const t = tileUV(tileIndex);
   const out: number[] = [];
   const faces: number[][][] = [

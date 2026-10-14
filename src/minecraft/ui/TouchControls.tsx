@@ -35,7 +35,7 @@ export function TouchControls({ game, width, height, flying }: { game: Game; wid
 
   const insets = useSafeAreaInsets();
   const jumpPos = { x: width - 78 - insets.right, y: height - 100 - insets.bottom };
-  const sneakPos = { x: width - 150 - insets.right, y: height - 58 - insets.bottom };
+  const sneakPos = { x: jumpPos.x, y: jumpPos.y - 82 };
   const joyHome = { x: 100 + insets.left, y: height - 105 - insets.bottom };
 
   // Detect "hold" on look touches even when the finger does not move.

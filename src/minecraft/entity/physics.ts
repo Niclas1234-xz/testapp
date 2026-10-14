@@ -1,4 +1,4 @@
-import { B, BLOCKS, FACE_DIRS } from '../blocks';
+import { B, BLOCKS, blockBox, FACE_DIRS } from '../blocks';
 import type { World } from '../world/world';
 
 /** Axis-aligned bounding box as [minX, minY, minZ, maxX, maxY, maxZ]. */
@@ -27,7 +27,7 @@ export function collisionBoxes(world: World, b: Box, out: number[]) {
         const id = world.getBlock(x, y, z);
         const def = BLOCKS[id];
         if (!def.solid) continue;
-        const bb = def.box;
+        const bb = def.shape === 'box' ? blockBox(id, world.getMeta(x, y, z)) : def.box;
         out.push(x + bb[0], y + bb[1], z + bb[2], x + bb[3], y + bb[4], z + bb[5]);
       }
     }
@@ -295,7 +295,7 @@ export function selectionBox(world: World, x: number, y: number, z: number, id: 
       return [cx - 0.15, 0.2, cz - 0.15, cx + 0.15, 0.8, cz + 0.15];
     }
     default:
-      return def.box;
+      return blockBox(id, world.getMeta(x, y, z));
   }
 }
 

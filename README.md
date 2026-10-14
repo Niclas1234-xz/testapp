@@ -57,8 +57,8 @@ Danach in `app.json` beim `expo-router`-Plugin die `origin` auf die Deploy-URL s
 Im selben Projekt steckt ein spielbarer Minecraft-Nachbau – oben rechts auf **⛏️ Minecraft** tippen
 (oder direkt `/minecraft` öffnen). Läuft in **Expo Go** (iOS/Android) und im Browser.
 
-Alle Texturen, Icons und das Logo werden beim Start **prozedural im Code erzeugt** – es sind keine
-Original-Dateien von Mojang enthalten. Sound gibt es (noch) nicht.
+Alle Texturen, Icons, Sounds und das Logo werden beim Start **prozedural im Code erzeugt** – es sind
+keine Original-Dateien von Mojang enthalten.
 
 ## Was alles funktioniert
 
@@ -74,7 +74,11 @@ Original-Dateien von Mojang enthalten. Sound gibt es (noch) nicht.
   Drops, Werkzeug-Haltbarkeit; **Bauen** inkl. Fackeln an Wänden, Öfen/Truhen mit Blickrichtung
 - **Inventar** (36 Slots + Hotbar), **Crafting** 2×2 und an der **Werkbank** 3×3 (Bretter, Stöcke,
   Werkbank, Ofen, Truhe, Fackeln, alle Werkzeuge aus Holz/Stein/Eisen/Gold/Diamant, Brot,
-  Sandstein, Steinziegel, Eimer), **Ofen** mit Brennstoff und Schmelzen, **Truhen**
+  Sandstein, Steinziegel, Eimer, Bett, Türen, Leitern), **Ofen** mit Brennstoff und Schmelzen, **Truhen**
+- **Türen** (öffnen/schließen – Zombies kommen nicht durch), **Leitern** zum Klettern, **Betten**
+  (nachts schlafen überspringt die Nacht und setzt den Einstiegspunkt)
+- **Sounds**: Abbauen/Bauen/Schritte je nach Material, Schaden, Essen, Aufsammeln, Türen, Tiere,
+  Zombies, Creeper-Zischen, Explosionen (synthetisiert; Lautstärke in den Optionen)
 - **Überleben**: Leben, Hunger/Sättigung, Regeneration, Verhungern, Ertrinken (Luftblasen),
   Kaktusschaden, Tod mit Item-Drop und Wiederbeleben; **Essen** (Apfel, Brot, Fleisch roh/gebraten)
 - **Mobs**: Schweine, Kühe, Schafe (Fleisch, Leder, Wolle), Zombies (verbrennen in der Sonne),
@@ -94,7 +98,7 @@ Original-Dateien von Mojang enthalten. Sound gibt es (noch) nicht.
 | Laufen | Joystick links (ganz nach vorne = Sprinten) | W A S D (W doppelt / Strg = Sprinten) |
 | Umsehen | Wischen | Maus (Klick ins Bild = Maus fangen) |
 | Abbauen / Angreifen | Halten / auf Mob tippen | Linke Maustaste |
-| Bauen / Benutzen | Tippen | Rechte Maustaste |
+| Bauen / Benutzen (Tür, Bett, Werkbank …) | Tippen | Rechte Maustaste |
 | Essen | Mit Essen in der Hand halten | Rechte Maustaste halten |
 | Springen / Fliegen | ⇧ (Kreativ: 2× = Fliegen) | Leertaste |
 | Schleichen | ● | Shift |
@@ -114,6 +118,7 @@ Im Inventar: **Tippen** nimmt/legt einen Stapel, **Halten** teilt ihn bzw. legt 
 - `src/minecraft/entity/` – Kollision/Physik, Spieler, Mobs, Items
 - `src/minecraft/game.ts` – Spiel-Loop, Interaktion, Spawning, Speichern
 - `src/minecraft/textures/` – prozedurale Pixel-Texturen und Textur-Atlas
+- `src/minecraft/sound.ts` – synthetisierte Sounds (WebAudio im Browser, `expo-audio` auf dem Handy)
 - `src/minecraft/ui/` – HUD, Touch-Steuerung, Inventare, Menüs
 
 Hinweis: Es ist ein privater Fan-Nachbau. „Minecraft“ ist eine Marke von Mojang/Microsoft – für eine

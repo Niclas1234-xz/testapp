@@ -56,6 +56,11 @@ export function OptionsScreen({ settings, onChange, onDone }: { settings: Settin
           onPlus={() => set({ gamma: clamp(settings.gamma + 0.25, 0, 1) })}
         />
         <Stepper
+          label={`Lautstärke: ${settings.soundVolume <= 0 ? 'Aus' : `${Math.round(settings.soundVolume * 100)}%`}`}
+          onMinus={() => set({ soundVolume: clamp(Math.round((settings.soundVolume - 0.1) * 10) / 10, 0, 1) })}
+          onPlus={() => set({ soundVolume: clamp(Math.round((settings.soundVolume + 0.1) * 10) / 10, 0, 1) })}
+        />
+        <Stepper
           label={`Schwierigkeit: ${DIFFICULTIES[settings.difficulty]}`}
           onMinus={() => set({ difficulty: (settings.difficulty + 3) % 4 })}
           onPlus={() => set({ difficulty: (settings.difficulty + 1) % 4 })}

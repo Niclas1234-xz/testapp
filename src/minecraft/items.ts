@@ -94,6 +94,8 @@ const FLAT_BLOCK_ICONS = new Set<number>([
   B.DANDELION,
   B.POPPY,
   B.DEAD_BUSH,
+  B.OAK_DOOR,
+  B.LADDER,
 ]);
 
 const BLOCK_FUEL: Partial<Record<number, number>> = {
@@ -108,6 +110,8 @@ const BLOCK_FUEL: Partial<Record<number, number>> = {
   [B.OAK_SAPLING]: 100,
   [B.BIRCH_SAPLING]: 100,
   [B.SPRUCE_SAPLING]: 100,
+  [B.OAK_DOOR]: 200,
+  [B.LADDER]: 300,
 };
 
 for (const b of BLOCKS) {
@@ -116,7 +120,7 @@ for (const b of BLOCKS) {
     id: b.id,
     key: b.key,
     name: b.name,
-    texture: b.faces[FLAT_BLOCK_ICONS.has(b.id) ? 0 : 2],
+    texture: b.id === B.OAK_DOOR ? tile('door_item') : b.faces[FLAT_BLOCK_ICONS.has(b.id) ? 0 : 2],
     places: b.id,
     cubeIcon: !FLAT_BLOCK_ICONS.has(b.id),
     fuel: BLOCK_FUEL[b.id],

@@ -1,4 +1,4 @@
-import { B, BLOCKS, faceTile, IS_OPAQUE, isLeaves, LIGHT_OPACITY } from '../blocks';
+import { B, BLOCKS, blockBox, faceTile, IS_OPAQUE, isLeaves, LIGHT_OPACITY } from '../blocks';
 import { SECTION_SIZE, WORLD_HEIGHT } from '../constants';
 import { TINT_COLORS } from '../icons';
 import { ATLAS_TILES } from '../textures/atlas';
@@ -406,10 +406,9 @@ export class Mesher {
   }
 
   private box(chunk: Chunk, x: number, y: number, z: number, id: number) {
-    const def = BLOCKS[id];
-    const [x0, y0, z0, x1, y1, z1] = def.box;
     const ids = this.ids;
     const meta = this.metas[pIndex(x, y, z)];
+    const [x0, y0, z0, x1, y1, z1] = blockBox(id, meta);
     const builder = TRANSLUCENT[id] ? this.transB : this.opaqueB;
     const bounds = [x1, x0, y1, y0, z1, z0];
     const touches = [x1 >= 1, x0 <= 0, y1 >= 1, y0 <= 0, z1 >= 1, z0 <= 0];
@@ -419,7 +418,7 @@ export class Mesher {
       const fy = y + n[1];
       const fz = z + n[2];
       const nid = ids[pIndex(fx, fy, fz)];
-      if (touches[face] && (IS_OPAQUE[nid] || (nid === id && id !== B.CHEST))) continue;
+      if (touches[face] && (IS_OPAQUE[nid] || (nid === id && id !== B.CHEST && id !== B.OAK_DOOR && id !== B.LADDER))) continue;
       // Cactus side faces are inset, but the cactus stacked above hides the top/bottom.
       const tileIndex = faceTile(id, face, meta);
       const corners = FACE_CORNERS[face];

@@ -16,6 +16,7 @@ import {
 import { backgroundTexture, itemIcon } from '../icons';
 import { durabilityOf, type Slot } from '../inventory';
 import { item } from '../items';
+import { sound } from '../sound';
 import { tile } from '../textures/atlas';
 
 export const MC_FONT = Platform.select({ ios: 'Menlo', android: 'monospace', default: 'monospace' });
@@ -71,7 +72,10 @@ export function McButton({
   const [hover, setHover] = useState(false);
   return (
     <Pressable
-      onPress={onPress}
+      onPress={() => {
+        sound.play('click', 0.6);
+        onPress();
+      }}
       disabled={disabled}
       onHoverIn={() => setHover(true)}
       onHoverOut={() => setHover(false)}

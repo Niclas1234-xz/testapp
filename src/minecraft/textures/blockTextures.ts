@@ -578,6 +578,55 @@ function bedSide(rng: Rng) {
   return t;
 }
 
+function doorHalf(rng: Rng, upper: boolean) {
+  const t = planks(rng, hex(0x9c7a46));
+  const frame = hex(0x6b5230);
+  for (let i = 0; i < TEX; i++) {
+    t.set(0, i, frame);
+    t.set(15, i, frame);
+    if (upper) t.set(i, 0, frame);
+    else t.set(i, 15, frame);
+  }
+  if (upper) {
+    // two windows
+    for (let y = 3; y < 9; y++)
+      for (let x = 3; x < 13; x++) {
+        if (x === 7 || x === 8) t.set(x, y, frame);
+        else t.clear(x, y);
+      }
+  } else {
+    t.set(12, 1, hex(0x3a3a3a));
+    t.set(12, 2, hex(0x5a5a5a));
+  }
+  return t;
+}
+
+function doorItem(rng: Rng) {
+  const t = new Tex();
+  const top = doorHalf(rng, true);
+  const bottom = doorHalf(rng, false);
+  // Squeeze both halves (16×32) into a 8×16 sprite centered in the tile.
+  for (let y = 0; y < TEX; y++)
+    for (let x = 0; x < 8; x++) {
+      const src = y < 8 ? top : bottom;
+      const sy = (y % 8) * 2;
+      const sx = x * 2;
+      if (src.alpha(sx, sy) > 0) t.set(x + 4, y, src.get(sx, sy));
+    }
+  return t;
+}
+
+function ladder(rng: Rng) {
+  const t = new Tex();
+  const wood = [hex(0x7a5a30), hex(0x8f6a38), hex(0x6b4e28)];
+  for (let y = 0; y < TEX; y++) {
+    for (const x of [2, 3, 12, 13]) t.set(x, y, wood[Math.floor(rng() * 3)]);
+    if (y % 4 === 1 || y % 4 === 2)
+      for (let x = 4; x < 12; x++) t.set(x, y, y % 4 === 1 ? hex(0x8f6a38) : hex(0x5d4321));
+  }
+  return t;
+}
+
 function seededLocal(seed: number) {
   let a = seed;
   return () => {
@@ -653,6 +702,10 @@ export const BLOCK_TEXTURES: Record<string, Gen> = {
   stone_bricks: stoneBricks,
   bed_top: bedTop,
   bed_side: bedSide,
+  door_lower: (r) => doorHalf(r, false),
+  door_upper: (r) => doorHalf(r, true),
+  door_item: doorItem,
+  ladder,
   water,
   ...Object.fromEntries(Array.from({ length: 8 }, (_, s) => [`wheat_${s}`, (r: Rng) => wheat(r, s)])),
   ...Object.fromEntries(crack.map((g, i) => [`destroy_${i}`, g])),

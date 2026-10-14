@@ -1,7 +1,10 @@
 import {
   B,
   block,
+  blockBox,
   BLOCKS,
+  DOOR_OPEN,
+  DOOR_UPPER,
   FACE_BOTTOM,
   FACE_DIRS,
   FACE_EAST,
@@ -24,6 +27,7 @@ import { consumeIngredients, findRecipe, smeltResult } from './recipes';
 import { lightBrightness, Renderer, type MobRender, type RenderFrame } from './render/renderer';
 import { Mesher } from './render/mesher';
 import { mulberry32 } from './rng';
+import { materialOf, sound, type SoundName } from './sound';
 import { saveChunk, saveWorldMeta, type Settings, type WorldMeta } from './storage';
 import { tile } from './textures/atlas';
 import { ChunkState, chunkId, type ChestEntity, type FurnaceEntity } from './world/chunk';
@@ -172,6 +176,7 @@ export class Game {
   /** > 0 while sleeping in a bed (counts up to 100 ticks). */
   sleepTicks = 0;
   private cloudOffset = 0;
+  private lastStep = 0;
 
   constructor(meta: WorldMeta, chunks: Map<string, ChunkSave>, settings: Settings) {
     this.meta = meta;
@@ -205,8 +210,10 @@ export class Game {
     }
     this.player.onDamage = () => {
       this.hurtCamera = 10;
+      sound.play('hurt', 0.9);
       this.markHud();
     };
+    sound.setVolume(settings.soundVolume);
     this.hud = this.buildHud();
   }
 
@@ -302,6 +309,7 @@ export class Game {
     const remesh = s.fancyGraphics !== this.settings.fancyGraphics || s.smoothLighting !== this.settings.smoothLighting;
     this.settings = s;
     this.player.difficulty = s.difficulty;
+    sound.setVolume(s.soundVolume);
     this.mesher.options = { fancyLeaves: s.fancyGraphics, smoothLighting: s.smoothLighting };
     if (s.difficulty === 0) this.mobs = this.mobs.filter((m) => !m.info.hostile);
     if (remesh) for (const c of this.world.chunks.values()) c.markAllDirty();
@@ -550,7 +558,12 @@ export class Game {
     const prevAir = p.air;
     if (!dead) {
       const eating = this.eatingTicks > 0;
+      const wasOnGround = p.onGround;
+      const wasInWater = p.inWater;
+      const fall = p.fallDistance;
+      const fallSpeed = p.vy;
       p.tickMovement(this.world, input, eating);
+      this.movementSounds(wasOnGround, wasInWater, fall, fallSpeed);
       p.tickStats(this.world);
       if (p.y < -64) {
         p.hurtCooldown = 0;
@@ -587,6 +600,27 @@ export class Game {
     this.swingPrev = this.swingTicks;
     if (this.swingTicks > 0) this.swingTicks--;
     this.cloudOffset += 0.03;
+  }
+
+  /** Footsteps, landing and splash sounds. */
+  private movementSounds(wasOnGround: boolean, wasInWater: boolean, fall: number, fallSpeed: number) {
+    const p = this.player;
+    const below = this.world.getBlock(Math.floor(p.x), Math.floor(p.y - 0.2), Math.floor(p.z));
+    if (p.onGround && !wasOnGround && fall > 1.5 && below !== B.AIR) sound.play(`step_${materialOf(below)}`, 0.5, 0.75);
+    if (p.inWater && !wasInWater && fallSpeed < -0.15) sound.play('splash', 0.5, 0.9 + this.rng() * 0.2);
+    if (p.onGround && !p.sneaking && !p.inWater && below !== B.AIR) {
+      const step = Math.floor(p.walkDist);
+      if (step > this.lastStep) sound.play(`step_${materialOf(below)}`, 0.18, 0.9 + this.rng() * 0.2);
+      this.lastStep = step;
+    } else this.lastStep = Math.floor(p.walkDist);
+  }
+
+  /** Plays a sound at a world position (fades out over 16 blocks, like Minecraft). */
+  private playAt(name: SoundName, x: number, y: number, z: number, volume = 1, pitch = 1, range = 16) {
+    const p = this.player;
+    const d = Math.hypot(x - p.x, y - p.eyeY(), z - p.z);
+    const v = volume * Math.max(0, 1 - d / (range * Math.max(1, volume)));
+    if (v > 0.01) sound.play(name, v, pitch);
   }
 
   private onDeath() {
@@ -646,6 +680,8 @@ export class Game {
       const wasAlive = m.health > 0;
       m.tick(ctx);
       if (wasAlive && m.health <= 0) this.onMobDeath(m);
+      if (m.type === 'creeper' && m.fuse === 1 && m.prevFuse === 0) this.playAt('fuse', m.x, m.y + 1, m.z, 1, 0.5);
+      else if (m.health > 0 && m.type !== 'creeper' && this.rng() < 1 / 320) this.playAt(m.type, m.x, m.y + 1, m.z, 0.7, 0.9 + this.rng() * 0.2);
     }
     this.mobs = this.mobs.filter((m) => !m.dead);
 
@@ -659,6 +695,7 @@ export class Game {
         if (it.x > b[0] - 1 && it.x < b[3] + 1 && it.y > b[1] - 0.5 && it.y < b[4] + 0.5 && it.z > b[2] - 1 && it.z < b[5] + 1) {
           const left = p.inventory.add(it.stack);
           if (left < it.stack.count) {
+            sound.play('pop', 0.25, 1.4 + this.rng() * 0.6);
             this.emit();
             if (left === 0) it.dead = true;
             else it.stack.count = left;
@@ -834,8 +871,12 @@ export class Game {
     // Eating (hold use with food).
     if (c.use && food && (p.food < 20 || p.creative) && !this.screen) {
       this.eatingTicks++;
-      if (this.eatingTicks % 4 === 0 && held) this.eatParticles(held.id);
+      if (this.eatingTicks % 4 === 0 && held) {
+        this.eatParticles(held.id);
+        if (this.eatingTicks > 6) sound.play('eat', 0.5, 0.8 + this.rng() * 0.4);
+      }
       if (this.eatingTicks >= 32) {
+        sound.play('burp', 0.5, 0.9 + this.rng() * 0.1);
         p.eat(food.hunger, food.saturation);
         if (!p.creative && held) this.consumeHeld(1);
         this.eatingTicks = 0;
@@ -860,7 +901,10 @@ export class Game {
             this.breakCooldown = 5;
           } else {
             this.breaking.progress += this.breakSpeed(id);
-            if (this.world.time % 4 === 0) this.hitParticles(t);
+            if (this.world.time % 4 === 0) {
+              this.hitParticles(t);
+              this.playAt(`step_${materialOf(id)}`, t.x + 0.5, t.y + 0.5, t.z + 0.5, 0.25, 0.5);
+            }
             if (this.breaking.progress >= 1) {
               this.breakBlock(t.x, t.y, t.z, id, true);
               this.breaking = null;
@@ -901,6 +945,7 @@ export class Game {
   private breakBlock(x: number, y: number, z: number, id: number, survival: boolean) {
     const held = this.heldStack();
     this.breakParticles(x, y, z, id);
+    this.playAt(`dig_${materialOf(id)}`, x + 0.5, y + 0.5, z + 0.5, 1, 0.8 + this.rng() * 0.1);
     this.world.breakBlock(x, y, z, survival ? held : null, survival);
     if (survival) {
       this.player.addExhaustion(0.005);
@@ -947,6 +992,8 @@ export class Game {
     if (crit) dmg *= 1.5;
     const kb = 0.4 + (p.sprinting ? 0.5 : 0);
     if (m.damage(dmg, p.x, p.z, kb)) {
+      this.playAt('hit', m.x, m.y + 1, m.z, 0.8, 0.9 + this.rng() * 0.2);
+      if (m.type !== 'creeper') this.playAt(m.type, m.x, m.y + 1, m.z, 0.8, 1.3);
       p.addExhaustion(0.1);
       if (tool) this.damageHeld(tool.type === 'sword' ? 1 : 2);
       if (crit) for (let i = 0; i < 8; i++) this.spawnSmoke(m.x, m.y + m.height * 0.7, m.z, 0.5);
@@ -972,6 +1019,7 @@ export class Game {
         return this.openScreen({ kind: 'furnace', x: t.x, y: t.y, z: t.z });
       }
       if (id === B.BED) return this.trySleep(t.x, t.y, t.z);
+      if (id === B.OAK_DOOR) return this.toggleDoor(t.x, t.y, t.z);
       if (id === B.CHEST) {
         if (!this.world.getBlockEntity(t.x, t.y, t.z))
           this.world.setBlockEntity(t.x, t.y, t.z, { type: 'chest', items: new Array<Slot>(27).fill(null) });
@@ -1030,6 +1078,29 @@ export class Game {
     const pdef = block(placeId);
     const below = this.world.getBlock(x, y - 1, z);
     switch (placeId) {
+      case B.OAK_DOOR: {
+        const above = this.world.getBlock(x, y + 1, z);
+        if (y + 1 >= 128 || (above !== B.AIR && !block(above).replaceable) || !this.world.isSturdy(below)) return;
+        const lx = -Math.sin(p.yaw);
+        const lz = Math.cos(p.yaw);
+        const edge = Math.abs(lx) > Math.abs(lz) ? (lx > 0 ? 3 : 1) : lz > 0 ? 0 : 2;
+        const box = blockBox(B.OAK_DOOR, edge);
+        if (this.boxBlocked(x, y, z, box) || this.boxBlocked(x, y + 1, z, box)) return;
+        this.world.setBlock(x, y, z, B.OAK_DOOR, edge, false);
+        this.world.setBlock(x, y + 1, z, B.OAK_DOOR, edge | DOOR_UPPER, false);
+        this.playAt('dig_wood', x + 0.5, y + 1, z + 0.5, 0.8, 0.8);
+        this.swing();
+        if (!p.creative) this.consumeHeld(1);
+        return;
+      }
+      case B.LADDER: {
+        if (face === FACE_TOP || face === FACE_BOTTOM) return;
+        const support = oppositeFace(face);
+        const [sx, sy, sz] = FACE_DIRS[support];
+        if (!this.world.isSturdy(this.world.getBlock(x + sx, y + sy, z + sz))) return;
+        placeMeta = support;
+        break;
+      }
       case B.TORCH: {
         if (face === FACE_BOTTOM) return;
         const support = oppositeFace(face);
@@ -1066,6 +1137,7 @@ export class Game {
     if (pdef.solid && this.boxBlocked(x, y, z, pdef.box)) return;
 
     this.world.setBlock(x, y, z, placeId, placeMeta);
+    this.playAt(placeId === B.WATER ? 'splash' : `dig_${materialOf(placeId)}`, x + 0.5, y + 0.5, z + 0.5, 0.8, 0.8);
     this.swing();
     if (!fromTap) this.useCooldown = 4;
     if (!p.creative) {
@@ -1074,6 +1146,16 @@ export class Game {
         this.emit();
       } else this.consumeHeld(1);
     }
+  }
+
+  private toggleDoor(x: number, y: number, z: number) {
+    const w = this.world;
+    const lowerY = w.getMeta(x, y, z) & DOOR_UPPER ? y - 1 : y;
+    const meta = w.getMeta(x, lowerY, z) ^ DOOR_OPEN;
+    w.setBlock(x, lowerY, z, B.OAK_DOOR, meta, false);
+    w.setBlock(x, lowerY + 1, z, B.OAK_DOOR, meta | DOOR_UPPER, false);
+    this.playAt('door', x + 0.5, lowerY + 1, z + 0.5, 0.9, 0.9 + this.rng() * 0.2);
+    this.swing();
   }
 
   /** Sleeping skips the night and sets the spawn point, like Minecraft. */
@@ -1207,6 +1289,7 @@ export class Game {
 
   private explode(x: number, y: number, z: number, power: number) {
     const world = this.world;
+    this.playAt('explode', x, y, z, 4, 0.8 + this.rng() * 0.2, 16);
     const destroyed = new Set<string>();
     for (let i = 0; i < 16; i++)
       for (let j = 0; j < 16; j++)
@@ -1801,7 +1884,6 @@ export class Game {
         roll,
         bobX: Math.sin(walk * Math.PI) * bob * 0.5,
         bobY: -Math.abs(Math.cos(walk * Math.PI) * bob),
-        bobAngle: walk,
       },
       celestial: day.celestial,
       skyDarken: day.skyDarken,

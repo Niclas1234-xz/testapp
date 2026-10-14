@@ -114,6 +114,15 @@ export class Living extends Entity {
       if (this.collidedH && jumping) this.vy = 0.3;
       return;
     }
+    // Ladders: limit speed and fall, climb when pushing against them (Minecraft isOnLadder).
+    const onLadder = world.getBlock(Math.floor(this.x), Math.floor(this.y), Math.floor(this.z)) === B.LADDER;
+    if (onLadder) {
+      this.vx = Math.max(-0.15, Math.min(0.15, this.vx));
+      this.vz = Math.max(-0.15, Math.min(0.15, this.vz));
+      this.fallDistance = 0;
+      this.vy = Math.max(this.vy, -0.15);
+      if (sneaking && this.vy < 0) this.vy = 0;
+    }
     let slip = 0.91;
     if (this.onGround) {
       const below = world.getBlock(Math.floor(this.x), Math.floor(this.y - 0.5), Math.floor(this.z));
@@ -122,6 +131,7 @@ export class Living extends Entity {
     const accel = this.onGround ? speed * (0.16277136 / (slip * slip * slip)) : airAccel;
     this.moveRelative(strafe, forward, accel);
     this.move(world, this.vx, this.vy, this.vz, sneaking);
+    if (onLadder && (this.collidedH || jumping)) this.vy = 0.2;
     this.vy -= 0.08;
     this.vy *= 0.98;
     this.vx *= slip;

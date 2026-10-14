@@ -6,8 +6,9 @@ import { hudIcon } from '../icons';
 import { itemName } from '../items';
 import { DirtBackground, ItemSlot, McText, styles as kit } from './kit';
 
+/** Hotbar slot size: leaves room for the joystick (left) and jump button (right) on phones. */
 export function hudSlotSize(width: number, height: number) {
-  return Math.round(Math.min(46, Math.max(32, Math.min(width / 15, height / 8.5))));
+  return Math.round(Math.min(46, Math.max(28, Math.min((width - 340) / 10, height / 8.5))));
 }
 
 function StatRow({ value, kind, size, reverse }: { value: number; kind: 'heart' | 'food' | 'bubble'; size: number; reverse?: boolean }) {

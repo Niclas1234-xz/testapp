@@ -46,6 +46,8 @@ export const B = {
   BIRCH_SAPLING: 41,
   SPRUCE_SAPLING: 42,
   BED: 43,
+  OAK_DOOR: 44,
+  LADDER: 45,
 } as const;
 
 /** Face order used everywhere: +X (east), -X (west), +Y (top), -Y (bottom), +Z (south), -Z (north). */
@@ -292,6 +294,8 @@ define('BED', {
   layer: 'cutout',
   hardness: 0.2,
 });
+define('OAK_DOOR', { name: 'Eichenholztür', tex: 'door_lower', shape: 'box', layer: 'cutout', hardness: 3, tool: 'axe' });
+define('LADDER', { name: 'Leiter', tex: 'ladder', shape: 'box', layer: 'cutout', solid: false, hardness: 0.4, tool: 'axe' });
 
 export const BLOCK_COUNT = BLOCKS.length;
 
@@ -311,8 +315,37 @@ export function block(id: number): BlockDef {
   return BLOCKS[id] ?? BLOCKS[0];
 }
 
+const DOOR_T = 3 / 16;
+const LADDER_T = 2 / 16;
+/** Door meta: bits 0–1 = closed edge (0 north, 1 east, 2 south, 3 west), bit 2 = open, bit 3 = upper half. */
+const DOOR_BOXES = [
+  [0, 0, 0, 1, 1, DOOR_T],
+  [1 - DOOR_T, 0, 0, 1, 1, 1],
+  [0, 0, 1 - DOOR_T, 1, 1, 1],
+  [0, 0, 0, DOOR_T, 1, 1],
+] as const;
+/** Ladder boxes by support face (+X, -X, -, -, +Z, -Z). */
+const LADDER_BOXES: Record<number, readonly number[]> = {
+  0: [1 - LADDER_T, 0, 0, 1, 1, 1],
+  1: [0, 0, 0, LADDER_T, 1, 1],
+  4: [0, 0, 1 - LADDER_T, 1, 1, 1],
+  5: [0, 0, 0, 1, 1, LADDER_T],
+};
+
+/** Bounds of a block for rendering, collision and selection (doors and ladders depend on meta). */
+export function blockBox(id: number, meta: number): readonly number[] {
+  if (id === B.OAK_DOOR) return DOOR_BOXES[((meta & 3) + (meta & 4 ? 1 : 0)) & 3];
+  if (id === B.LADDER) return LADDER_BOXES[meta] ?? LADDER_BOXES[5];
+  return BLOCKS[id].box;
+}
+
+export const DOOR_OPEN = 4;
+export const DOOR_UPPER = 8;
+
 export const WHEAT_TILES = Array.from({ length: 8 }, (_, i) => tile(`wheat_${i}`));
 export const DESTROY_TILES = Array.from({ length: 10 }, (_, i) => tile(`destroy_${i}`));
+
+const DOOR_UPPER_TILE = tile('door_upper');
 
 const FAST_LEAVES: Record<number, number> = {
   [B.OAK_LEAVES]: tile('oak_leaves_opaque'),
@@ -327,6 +360,7 @@ const FAST_LEAVES: Record<number, number> = {
 export function faceTile(id: number, face: number, meta: number, snowAbove = false, fancyLeaves = true): number {
   const def = BLOCKS[id];
   if (id === B.WHEAT) return WHEAT_TILES[meta & 7];
+  if (id === B.OAK_DOOR) return meta & 8 ? DOOR_UPPER_TILE : def.faces[0];
   if (!fancyLeaves && FAST_LEAVES[id] !== undefined) return FAST_LEAVES[id];
   if (def.facing && face !== 2 && face !== 3) {
     // faces[4] holds the front texture; meta stores which face is the front.

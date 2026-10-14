@@ -209,6 +209,8 @@ export interface Settings {
   /** 0 = moody … 1 = bright */
   gamma: number;
   invertY: boolean;
+  /** 0..1 */
+  soundVolume: number;
 }
 
 export const DEFAULT_SETTINGS: Settings = {
@@ -223,6 +225,7 @@ export const DEFAULT_SETTINGS: Settings = {
   difficulty: 2,
   gamma: 0.5,
   invertY: false,
+  soundVolume: 1,
 };
 
 export function loadSettings(): Settings {

@@ -42,6 +42,8 @@ export function blockDrops(id: number, meta: number, tool: ItemStack | null, rng
       return [];
     case B.FURNACE_LIT:
       return one(B.FURNACE);
+    case B.OAK_DOOR:
+      return meta & 8 ? [] : one(B.OAK_DOOR);
     case B.DEAD_BUSH:
       return one(I.STICK, Math.floor(rng() * 3));
     case B.WHEAT: {
