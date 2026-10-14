@@ -222,19 +222,23 @@ export class TerrainGenerator {
         const col = cols[z * 16 + x];
         const underwater = col.height < SEA_LEVEL;
         const maxY = underwater ? col.height - 5 : col.entrance ? col.height : col.height - 4;
+        // Column base offsets of the four surrounding grid columns.
+        const b00 = (iz * gx + ix) * gy;
+        const b10 = (iz * gx + ix + 1) * gy;
+        const b01 = ((iz + 1) * gx + ix) * gy;
+        const b11 = ((iz + 1) * gx + ix + 1) * gy;
         for (let y = 5; y <= maxY; y++) {
           const iy = y >> 2;
           const fy = (y & 3) / 4;
-          const g = (ix2: number, iy2: number, iz2: number) => grid[(iz2 * gx + ix2) * gy + iy2];
-          const c00 = g(ix, iy, iz) + (g(ix + 1, iy, iz) - g(ix, iy, iz)) * fx;
-          const c10 = g(ix, iy + 1, iz) + (g(ix + 1, iy + 1, iz) - g(ix, iy + 1, iz)) * fx;
-          const c01 = g(ix, iy, iz + 1) + (g(ix + 1, iy, iz + 1) - g(ix, iy, iz + 1)) * fx;
-          const c11 = g(ix, iy + 1, iz + 1) + (g(ix + 1, iy + 1, iz + 1) - g(ix, iy + 1, iz + 1)) * fx;
-          const c0 = c00 + (c10 - c00) * fy;
-          const c1 = c01 + (c11 - c01) * fy;
+          const a0 = grid[b00 + iy] + (grid[b10 + iy] - grid[b00 + iy]) * fx;
+          const a1 = grid[b00 + iy + 1] + (grid[b10 + iy + 1] - grid[b00 + iy + 1]) * fx;
+          const c0z = grid[b01 + iy] + (grid[b11 + iy] - grid[b01 + iy]) * fx;
+          const c1z = grid[b01 + iy + 1] + (grid[b11 + iy + 1] - grid[b01 + iy + 1]) * fx;
+          const c0 = a0 + (a1 - a0) * fy;
+          const c1 = c0z + (c1z - c0z) * fy;
           const v = c0 + (c1 - c0) * fz;
           if (v >= 0) continue;
-          const i = blockIndex(x, y, z);
+          const i = (y << 8) | (z << 4) | x;
           const id = blocks[i];
           if (id === B.BEDROCK || id === B.WATER || id === B.ICE) continue;
           blocks[i] = B.AIR;
@@ -302,7 +306,19 @@ export class TerrainGenerator {
     this.placePlants(chunk, cols);
   }
 
+  private treeCache = new Map<number, { x: number; y: number; z: number; kind: TreeKind; seed: number }[]>();
+
   private treesIn(cx: number, cz: number) {
+    const key = cx * 65536 + cz;
+    const cached = this.treeCache.get(key);
+    if (cached) return cached;
+    const trees = this.computeTrees(cx, cz);
+    if (this.treeCache.size > 512) this.treeCache.clear();
+    this.treeCache.set(key, trees);
+    return trees;
+  }
+
+  private computeTrees(cx: number, cz: number) {
     const rng = mulberry32(hash4(this.seed, cx, cz, 2));
     const center = this.column(cx * 16 + 8, cz * 16 + 8);
     let attempts = 0;

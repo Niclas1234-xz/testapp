@@ -85,6 +85,8 @@ export interface HudState {
   info: string | null;
   deathMessage: string;
   hurt: number;
+  /** Fade to black while sleeping (0..1). */
+  sleep: number;
 }
 
 const DIFFICULTY_DAMAGE = [0, 2, 3, 4];
@@ -167,6 +169,8 @@ export class Game {
   private lastJumpTime = -100;
   private deathMessage = '';
   private isDead = false;
+  /** > 0 while sleeping in a bed (counts up to 100 ticks). */
+  sleepTicks = 0;
   private cloudOffset = 0;
 
   constructor(meta: WorldMeta, chunks: Map<string, ChunkSave>, settings: Settings) {
@@ -271,6 +275,7 @@ export class Game {
       info,
       deathMessage: this.deathMessage,
       hurt: p.hurtTime,
+      sleep: this.sleepTicks > 0 ? Math.min(1, this.sleepTicks / 60) : 0,
     };
   }
 
@@ -465,15 +470,18 @@ export class Game {
         if (c && c.state === ChunkState.Lit && c.dirty.some((d) => d === 1)) list.push([pcx + dx, pcz + dz, dx * dx + dz * dz]);
       }
     list.sort((a, b) => a[2] - b[2]);
+    // Mesh section by section within the frame budget (at least one per frame).
+    let meshed = 0;
     for (const [cx, cz] of list) {
       const c = this.world.chunkAt(cx, cz);
       if (!c || !this.world.isMeshable(c)) continue;
       for (let sy = 0; sy < SECTION_COUNT; sy++) {
         if (!c.dirty[sy]) continue;
+        if (meshed > 0 && Date.now() - frameStart > budget) return;
         c.dirty[sy] = 0;
         this.renderer.uploadSection(cx, cz, sy, this.mesher.build(this.world, c, sy));
+        meshed++;
       }
-      if (Date.now() - frameStart > budget) break;
     }
   }
 
@@ -512,7 +520,18 @@ export class Game {
 
     const dead = this.isDead;
     const c = this.controls;
-    const input: PlayerInput = dead || this.screen
+    if (this.sleepTicks > 0) {
+      this.sleepTicks++;
+      this.markHud();
+      if (c.forward !== 0 || c.strafe !== 0 || c.jump) this.sleepTicks = 0;
+      else if (this.sleepTicks >= 100) {
+        // Wake up at the next morning.
+        this.world.time += DAY_LENGTH - (this.world.time % DAY_LENGTH);
+        this.sleepTicks = 0;
+        this.mobs = this.mobs.filter((m) => !m.info.hostile);
+      }
+    }
+    const input: PlayerInput = dead || this.screen || this.sleepTicks > 0
       ? { forward: 0, strafe: 0, jump: false, sneak: false, sprint: false }
       : { forward: c.forward, strafe: c.strafe, jump: c.jump, sneak: c.sneak, sprint: c.sprint };
 
@@ -592,6 +611,7 @@ export class Game {
     p.setPos(s.x, s.y + 0.2, s.z);
     p.flying = false;
     this.isDead = false;
+    this.sleepTicks = 0;
     this.screen = null;
     this.emit();
   }
@@ -834,7 +854,7 @@ export class Game {
           this.breaking = { x: t.x, y: t.y, z: t.z, progress: 0 };
         }
         if (this.breakCooldown === 0) {
-          this.swingTicks = 6;
+          this.swing();
           if (p.creative) {
             this.breakBlock(t.x, t.y, t.z, id, false);
             this.breakCooldown = 5;
@@ -856,6 +876,11 @@ export class Game {
       this.useItem(false);
       this.useCooldown = 4;
     }
+  }
+
+  /** Starts an arm swing (6 ticks) unless one is still in its first half. */
+  private swing() {
+    if (this.swingTicks < 3) this.swingTicks = 6;
   }
 
   /** Minecraft block breaking speed per tick. */
@@ -911,7 +936,7 @@ export class Game {
   attack() {
     if (this.screen || this.player.health <= 0) return;
     this.updateTarget();
-    this.swingTicks = 6;
+    this.swing();
     const m = this.targetMob;
     if (!m) return;
     const p = this.player;
@@ -946,6 +971,7 @@ export class Game {
           this.world.setBlockEntity(t.x, t.y, t.z, { type: 'furnace', input: null, fuel: null, output: null, burn: 0, burnTotal: 0, cook: 0 });
         return this.openScreen({ kind: 'furnace', x: t.x, y: t.y, z: t.z });
       }
+      if (id === B.BED) return this.trySleep(t.x, t.y, t.z);
       if (id === B.CHEST) {
         if (!this.world.getBlockEntity(t.x, t.y, t.z))
           this.world.setBlockEntity(t.x, t.y, t.z, { type: 'chest', items: new Array<Slot>(27).fill(null) });
@@ -957,7 +983,7 @@ export class Game {
     // Buckets
     if (held.id === I.BUCKET && t && this.world.getBlock(t.x, t.y, t.z) === B.WATER && this.world.getMeta(t.x, t.y, t.z) === 0) {
       this.world.setBlock(t.x, t.y, t.z, B.AIR);
-      this.swingTicks = 6;
+      this.swing();
       if (!p.creative) {
         this.consumeHeld(1);
         const left = p.inventory.add({ id: I.WATER_BUCKET, count: 1, damage: 0 });
@@ -973,7 +999,7 @@ export class Game {
       const id = this.world.getBlock(t.x, t.y, t.z);
       if ((id === B.GRASS || id === B.DIRT) && t.face !== FACE_BOTTOM && this.world.getBlock(t.x, t.y + 1, t.z) === B.AIR) {
         this.world.setBlock(t.x, t.y, t.z, B.FARMLAND);
-        this.swingTicks = 6;
+        this.swing();
         this.damageHeld(1);
       }
       return;
@@ -1040,7 +1066,7 @@ export class Game {
     if (pdef.solid && this.boxBlocked(x, y, z, pdef.box)) return;
 
     this.world.setBlock(x, y, z, placeId, placeMeta);
-    this.swingTicks = 6;
+    this.swing();
     if (!fromTap) this.useCooldown = 4;
     if (!p.creative) {
       if (held.id === I.WATER_BUCKET) {
@@ -1048,6 +1074,24 @@ export class Game {
         this.emit();
       } else this.consumeHeld(1);
     }
+  }
+
+  /** Sleeping skips the night and sets the spawn point, like Minecraft. */
+  private trySleep(x: number, y: number, z: number) {
+    const p = this.player;
+    if (this.dayInfo().daylight > 0.45) {
+      this.showToast('Du kannst nur nachts schlafen');
+      return;
+    }
+    if (this.mobs.some((m) => m.info.hostile && m.health > 0 && Math.abs(m.x - x) < 8 && Math.abs(m.z - z) < 8 && Math.abs(m.y - y) < 5)) {
+      this.showToast('Du kannst jetzt nicht schlafen, es sind Monster in der Nähe');
+      return;
+    }
+    this.meta.spawn = { x: x + 0.5, y: y + 1, z: z + 0.5 };
+    p.setPos(x + 0.5, y + 0.5625, z + 0.5);
+    p.vx = p.vy = p.vz = 0;
+    this.sleepTicks = 1;
+    this.showToast('Einstiegspunkt gesetzt');
   }
 
   private boxBlocked(x: number, y: number, z: number, bb: readonly number[]) {

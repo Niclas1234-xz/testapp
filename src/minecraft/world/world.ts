@@ -17,7 +17,7 @@ import { fuelTicks, SMELT_TIME, smeltResult } from '../recipes';
 import { hash4, mulberry32, type Rng } from '../rng';
 import { Chunk, chunkId, ChunkState, type BlockEntity, type FurnaceEntity } from './chunk';
 import { TerrainGenerator } from './generator';
-import { LightEngine } from './lighting';
+import { computeHeightmap, LightEngine } from './lighting';
 import { buildTree, type TreeKind } from './trees';
 
 export interface WorldHooks {
@@ -70,7 +70,7 @@ export class World {
   ) {
     this.gen = new TerrainGenerator(seed);
     this.light = new LightEngine({
-      chunkAt: (cx, cz) => this.chunks.get(chunkId(cx, cz)),
+      chunks: this.chunks,
       markDirty: (x, y, z) => this.markDirty(x, y, z),
     });
     this.rng = mulberry32(hash4(seed, 42, 4242));
@@ -104,6 +104,7 @@ export class World {
         }
       }
     }
+    computeHeightmap(c);
     this.chunks.set(chunkId(cx, cz), c);
     return c;
   }

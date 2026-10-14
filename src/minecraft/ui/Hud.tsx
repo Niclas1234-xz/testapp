@@ -1,4 +1,5 @@
 import { Image, Pressable, StyleSheet, View } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import type { Game, HudState } from '../game';
 import { hudIcon } from '../icons';
@@ -40,6 +41,7 @@ export function Hud({
 }) {
   const slot = hudSlotSize(width, height);
   const icon = Math.round(slot * 0.4);
+  const insets = useSafeAreaInsets();
 
   const bubbles = Math.ceil((hud.air / 300) * 20);
 
@@ -51,13 +53,19 @@ export function Hud({
         <View style={s.crossV} />
       </View>
 
+      {hud.sleep > 0 && (
+        <View style={[s.sleep, { opacity: hud.sleep }]} pointerEvents="none">
+          <McText size={16}>Schlafen …</McText>
+        </View>
+      )}
+
       {hud.info && (
-        <View style={s.info} pointerEvents="none">
+        <View style={[s.info, { left: 8 + insets.left, top: 8 + insets.top }]} pointerEvents="none">
           <McText size={12}>{hud.info}</McText>
         </View>
       )}
 
-      <View style={s.bottom} pointerEvents="box-none">
+      <View style={[s.bottom, { bottom: 4 + insets.bottom }]} pointerEvents="box-none">
         {hud.toast && (
           <McText size={14} style={s.toast}>
             {hud.toast}
@@ -135,6 +143,16 @@ const s = StyleSheet.create({
   crossH: { position: 'absolute', width: 18, height: 2, backgroundColor: 'rgba(255,255,255,0.85)' },
   crossV: { position: 'absolute', width: 2, height: 18, backgroundColor: 'rgba(255,255,255,0.85)' },
   info: { position: 'absolute', left: 8, top: 8, backgroundColor: 'rgba(0,0,0,0.35)', padding: 4 },
+  sleep: {
+    position: 'absolute',
+    left: 0,
+    right: 0,
+    top: 0,
+    bottom: 0,
+    backgroundColor: '#05060A',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
   bottom: { position: 'absolute', left: 0, right: 0, bottom: 4, alignItems: 'center' },
   toast: { marginBottom: 6 },
   stats: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-end', marginBottom: 3 },

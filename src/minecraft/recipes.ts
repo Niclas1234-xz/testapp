@@ -44,6 +44,7 @@ shaped(['###'], { '#': I.WHEAT }, I.BREAD);
 shaped(['##', '##'], { '#': B.SAND }, B.SANDSTONE);
 shaped(['##', '##'], { '#': B.STONE }, B.STONE_BRICKS, 4);
 shaped(['# #', ' # '], { '#': I.IRON_INGOT }, I.BUCKET);
+shaped(['WWW', 'PPP'], { W: B.WHITE_WOOL, P: PLANKS }, B.BED);
 
 const TOOL_MATERIAL: Record<ToolTier, Ingredient> = {
   wooden: PLANKS,

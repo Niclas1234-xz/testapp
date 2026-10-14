@@ -45,6 +45,7 @@ export const B = {
   DEAD_BUSH: 40,
   BIRCH_SAPLING: 41,
   SPRUCE_SAPLING: 42,
+  BED: 43,
 } as const;
 
 /** Face order used everywhere: +X (east), -X (west), +Y (top), -Y (bottom), +Z (south), -Z (north). */
@@ -283,6 +284,14 @@ define('STONE_BRICKS', { name: 'Steinziegel', tex: 'stone_bricks', hardness: 1.5
 define('DEAD_BUSH', { name: 'Toter Busch', tex: 'dead_bush', replaceable: true, ...plant });
 define('BIRCH_SAPLING', { name: 'Birkensetzling', tex: 'birch_sapling', ...plant });
 define('SPRUCE_SAPLING', { name: 'Fichtensetzling', tex: 'spruce_sapling', ...plant });
+define('BED', {
+  name: 'Bett',
+  tex: { side: 'bed_side', top: 'bed_top', bottom: 'oak_planks' },
+  shape: 'box',
+  box: [0, 0, 0, 1, px(9), 1],
+  layer: 'cutout',
+  hardness: 0.2,
+});
 
 export const BLOCK_COUNT = BLOCKS.length;
 

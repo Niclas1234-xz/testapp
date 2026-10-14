@@ -553,6 +553,31 @@ function tinted(t: Tex, color: number) {
   return t;
 }
 
+function bedTop(rng: Rng) {
+  const t = new Tex();
+  for (let y = 0; y < TEX; y++)
+    for (let x = 0; x < TEX; x++) {
+      const pillow = y < 5 && x > 1 && x < 14;
+      const edge = x === 0 || x === 15;
+      if (pillow) t.set(x, y, scale(hex(0xeeeeee), 0.92 + rng() * 0.08));
+      else if (edge) t.set(x, y, hex(0x7a1f1f));
+      else t.set(x, y, scale(hex(0xa62b2b), (y + x) % 5 === 0 ? 0.88 : 0.97 + rng() * 0.06));
+    }
+  return t;
+}
+
+function bedSide(rng: Rng) {
+  const t = new Tex();
+  for (let y = 0; y < TEX; y++)
+    for (let x = 0; x < TEX; x++) {
+      if (y < 7) t.clear(x, y);
+      else if (y < 11) t.set(x, y, scale(hex(0xa62b2b), 0.9 + rng() * 0.1));
+      else if (y < 13 || x < 3 || x > 12) t.set(x, y, scale(hex(0x9c7a46), 0.85 + rng() * 0.15));
+      else t.clear(x, y);
+    }
+  return t;
+}
+
 function seededLocal(seed: number) {
   let a = seed;
   return () => {
@@ -626,6 +651,8 @@ export const BLOCK_TEXTURES: Record<string, Gen> = {
   white_wool: (r) => wool(r, hex(0xeaeded)),
   farmland: farmland,
   stone_bricks: stoneBricks,
+  bed_top: bedTop,
+  bed_side: bedSide,
   water,
   ...Object.fromEntries(Array.from({ length: 8 }, (_, s) => [`wheat_${s}`, (r: Rng) => wheat(r, s)])),
   ...Object.fromEntries(crack.map((g, i) => [`destroy_${i}`, g])),

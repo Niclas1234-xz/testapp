@@ -73,17 +73,32 @@ export class Perlin {
     const BA = p[B] + Z;
     const BB = p[B + 1] + Z;
     const g = GRAD3;
-    const dot = (hashIndex: number, dx: number, dy: number, dz: number) => {
-      const gi = pm[hashIndex] * 3;
-      return g[gi] * dx + g[gi + 1] * dy + g[gi + 2] * dz;
-    };
-    const x1 = lerp(u, dot(AA, xf, yf, zf), dot(BA, xf - 1, yf, zf));
-    const x2 = lerp(u, dot(AB, xf, yf - 1, zf), dot(BB, xf - 1, yf - 1, zf));
-    const y1 = lerp(v, x1, x2);
-    const x3 = lerp(u, dot(AA + 1, xf, yf, zf - 1), dot(BA + 1, xf - 1, yf, zf - 1));
-    const x4 = lerp(u, dot(AB + 1, xf, yf - 1, zf - 1), dot(BB + 1, xf - 1, yf - 1, zf - 1));
-    const y2 = lerp(v, x3, x4);
-    return lerp(w, y1, y2);
+    const xm = xf - 1;
+    const ym = yf - 1;
+    const zm = zf - 1;
+    let gi = pm[AA] * 3;
+    const n000 = g[gi] * xf + g[gi + 1] * yf + g[gi + 2] * zf;
+    gi = pm[BA] * 3;
+    const n100 = g[gi] * xm + g[gi + 1] * yf + g[gi + 2] * zf;
+    gi = pm[AB] * 3;
+    const n010 = g[gi] * xf + g[gi + 1] * ym + g[gi + 2] * zf;
+    gi = pm[BB] * 3;
+    const n110 = g[gi] * xm + g[gi + 1] * ym + g[gi + 2] * zf;
+    gi = pm[AA + 1] * 3;
+    const n001 = g[gi] * xf + g[gi + 1] * yf + g[gi + 2] * zm;
+    gi = pm[BA + 1] * 3;
+    const n101 = g[gi] * xm + g[gi + 1] * yf + g[gi + 2] * zm;
+    gi = pm[AB + 1] * 3;
+    const n011 = g[gi] * xf + g[gi + 1] * ym + g[gi + 2] * zm;
+    gi = pm[BB + 1] * 3;
+    const n111 = g[gi] * xm + g[gi + 1] * ym + g[gi + 2] * zm;
+    const x1 = n000 + u * (n100 - n000);
+    const x2 = n010 + u * (n110 - n010);
+    const x3 = n001 + u * (n101 - n001);
+    const x4 = n011 + u * (n111 - n011);
+    const y1 = x1 + v * (x2 - x1);
+    const y2 = x3 + v * (x4 - x3);
+    return y1 + w * (y2 - y1);
   }
 
   /** Fractal sum of 2D octaves, normalized to roughly [-1, 1]. */
@@ -118,8 +133,4 @@ export class Perlin {
 
 function fade(t: number) {
   return t * t * t * (t * (t * 6 - 15) + 10);
-}
-
-function lerp(t: number, a: number, b: number) {
-  return a + t * (b - a);
 }

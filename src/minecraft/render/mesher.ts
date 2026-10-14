@@ -1,5 +1,5 @@
-import { B, BLOCKS, faceTile, IS_OPAQUE, isLeaves } from '../blocks';
-import { blockIndex, SECTION_SIZE, WORLD_HEIGHT } from '../constants';
+import { B, BLOCKS, faceTile, IS_OPAQUE, isLeaves, LIGHT_OPACITY } from '../blocks';
+import { SECTION_SIZE, WORLD_HEIGHT } from '../constants';
 import { TINT_COLORS } from '../icons';
 import { ATLAS_TILES } from '../textures/atlas';
 import type { Chunk } from '../world/chunk';
@@ -82,7 +82,45 @@ function faceUV(face: number, x: number, y: number, z: number): [number, number]
 }
 
 const P = 18; // padded size
+const P2 = P * P;
 const pIndex = (x: number, y: number, z: number) => ((y + 1) * P + (z + 1)) * P + (x + 1);
+
+/** Padded-index offsets: face normal, and per face corner the two side cells + the diagonal (for AO). */
+const FRONT_DELTA = new Int32Array(6);
+const AO_A = new Int32Array(24);
+const AO_B = new Int32Array(24);
+const AO_C = new Int32Array(24);
+/** Texture u/v per face corner of a full cube. */
+const CUBE_U = new Float32Array(24);
+const CUBE_V = new Float32Array(24);
+for (let f = 0; f < 6; f++) {
+  const n = [[1, 0, 0], [-1, 0, 0], [0, 1, 0], [0, -1, 0], [0, 0, 1], [0, 0, -1]][f];
+  FRONT_DELTA[f] = n[1] * P2 + n[2] * P + n[0];
+  for (let k = 0; k < 4; k++) {
+    const [cx, cy, cz] = FACE_CORNERS[f][k];
+    const tx = cx ? 1 : -1;
+    const ty = cy ? 1 : -1;
+    const tz = cz ? 1 : -1;
+    let s1: number;
+    let s2: number;
+    if (n[0] !== 0) {
+      s1 = ty * P2;
+      s2 = tz * P;
+    } else if (n[1] !== 0) {
+      s1 = tx;
+      s2 = tz * P;
+    } else {
+      s1 = tx;
+      s2 = ty * P2;
+    }
+    AO_A[f * 4 + k] = s1;
+    AO_B[f * 4 + k] = s2;
+    AO_C[f * 4 + k] = s1 + s2;
+    const [u, v] = faceUV(f, cx, cy, cz);
+    CUBE_U[f * 4 + k] = u;
+    CUBE_V[f * 4 + k] = v;
+  }
+}
 
 /** Growable vertex buffer for one render layer. */
 class MeshBuilder {
@@ -183,11 +221,10 @@ export class Mesher {
         const wx = ox + lx;
         const wz = oz + lz;
         const c = lx >= 0 && lx < 16 && lz >= 0 && lz < 16 ? chunk : world.chunkAt(wx >> 4, wz >> 4);
-        const bx = wx & 15;
-        const bz = wz & 15;
-        for (let ly = -1; ly <= 16; ly++) {
+        const ci = ((wz & 15) << 4) | (wx & 15);
+        let p = pIndex(lx, -1, lz);
+        for (let ly = -1; ly <= 16; ly++, p += P2) {
           const y = y0 + ly;
-          const p = pIndex(lx, ly, lz);
           if (!c || y < 0) {
             ids[p] = y < 0 ? B.BEDROCK : B.AIR;
             metas[p] = 0;
@@ -197,7 +234,7 @@ export class Mesher {
             metas[p] = 0;
             lights[p] = 0xf0;
           } else {
-            const i = blockIndex(bx, y, bz);
+            const i = (y << 8) | ci;
             ids[p] = c.blocks[i];
             metas[p] = c.meta[i];
             lights[p] = c.light[i];
@@ -214,14 +251,27 @@ export class Mesher {
     this.gather(world, chunk, sy);
     const ids = this.ids;
     for (let y = 0; y < 16; y++)
-      for (let z = 0; z < 16; z++)
+      for (let z = 0; z < 16; z++) {
+        const row = pIndex(0, y, z);
         for (let x = 0; x < 16; x++) {
-          const id = ids[pIndex(x, y, z)];
+          const id = ids[row + x];
           if (id === B.AIR) continue;
           switch (SHAPE[id]) {
-            case SHAPE_CUBE:
+            case SHAPE_CUBE: {
+              // Fast path: blocks buried on all sides produce no faces.
+              const p = row + x;
+              if (
+                IS_OPAQUE[ids[p + 1]] &&
+                IS_OPAQUE[ids[p - 1]] &&
+                IS_OPAQUE[ids[p + P]] &&
+                IS_OPAQUE[ids[p - P]] &&
+                IS_OPAQUE[ids[p + P2]] &&
+                IS_OPAQUE[ids[p - P2]]
+              )
+                break;
               this.cube(chunk, x, y, z, id);
               break;
+            }
             case SHAPE_BOX:
               this.box(chunk, x, y, z, id);
               break;
@@ -239,19 +289,31 @@ export class Mesher {
               break;
           }
         }
+      }
     return { opaque: this.opaqueB.result(), translucent: this.transB.result() };
   }
 
-  private tint(chunk: Chunk, id: number, face: number, x: number, z: number): [number, number, number] {
+  private tr = 255;
+  private tg = 255;
+  private tb = 255;
+
+  /** Sets this.tr/tg/tb to the biome tint of a face. */
+  private tint(chunk: Chunk, id: number, face: number, x: number, z: number) {
     const t = BLOCKS[id].tint;
-    if (!t || (id === B.GRASS && face !== 2)) return [255, 255, 255];
-    if (t === 'grass' || t === 'foliage') {
+    if (!t || (id === B.GRASS && face !== 2)) {
+      this.tr = this.tg = this.tb = 255;
+    } else if (t === 'grass' || t === 'foliage') {
       const arr = t === 'grass' ? chunk.grassTint : chunk.foliageTint;
       const i = (z * 16 + x) * 3;
-      return [arr[i], arr[i + 1], arr[i + 2]];
+      this.tr = arr[i];
+      this.tg = arr[i + 1];
+      this.tb = arr[i + 2];
+    } else {
+      const c = TINT_COLORS[t];
+      this.tr = c[0];
+      this.tg = c[1];
+      this.tb = c[2];
     }
-    const c = TINT_COLORS[t];
-    return [c[0], c[1], c[2]];
   }
 
   private faceVisible(id: number, nid: number): boolean {
@@ -271,48 +333,26 @@ export class Mesher {
     this.pv[k] = Math.min(ty + span - 1, Math.max(ty + 1, Math.round(ty + v * span)));
   }
 
-  /** Smooth light + ambient occlusion for corner k of a face whose front cell is (fx, fy, fz). */
-  private cornerLight(face: number, k: number, fx: number, fy: number, fz: number, cx: number, cy: number, cz: number) {
+  /** Smooth light + ambient occlusion for corner k of a face; f = padded index of the front cell. */
+  private cornerLight(face: number, k: number, f: number) {
     const ids = this.ids;
     const lights = this.lights;
-    const n = NORMALS[face];
-    // tangent offsets toward the corner
-    const tx = n[0] === 0 ? (cx ? 1 : -1) : 0;
-    const ty = n[1] === 0 ? (cy ? 1 : -1) : 0;
-    const tz = n[2] === 0 ? (cz ? 1 : -1) : 0;
-    // two tangent axes: split the 2D offset into its components
-    let s1x = 0;
-    let s1y = 0;
-    let s1z = 0;
-    let s2x = 0;
-    let s2y = 0;
-    let s2z = 0;
-    if (n[0] !== 0) {
-      s1y = ty;
-      s2z = tz;
-    } else if (n[1] !== 0) {
-      s1x = tx;
-      s2z = tz;
-    } else {
-      s1x = tx;
-      s2y = ty;
-    }
-    const f = pIndex(fx, fy, fz);
-    const a = pIndex(fx + s1x, fy + s1y, fz + s1z);
-    const b = pIndex(fx + s2x, fy + s2y, fz + s2z);
-    const c = pIndex(fx + s1x + s2x, fy + s1y + s2y, fz + s1z + s2z);
+    const j = face * 4 + k;
+    const a = f + AO_A[j];
+    const b = f + AO_B[j];
+    const c = f + AO_C[j];
     const oa = IS_OPAQUE[ids[a]];
     const ob = IS_OPAQUE[ids[b]];
     const oc = IS_OPAQUE[ids[c]];
-    const ao = oa && ob ? 0 : 3 - oa - ob - oc;
-    this.ao[k] = ao;
+    this.ao[k] = oa && ob ? 0 : 3 - oa - ob - oc;
+    const lf = lights[f];
     if (!this.options.smoothLighting) {
-      this.sky[k] = (lights[f] >> 4) * 16;
-      this.blk[k] = (lights[f] & 15) * 16;
+      this.sky[k] = (lf >> 4) * 16;
+      this.blk[k] = (lf & 15) * 16;
       return;
     }
-    let sky = lights[f] >> 4;
-    let blk = lights[f] & 15;
+    let sky = lf >> 4;
+    let blk = lf & 15;
     let count = 1;
     if (!oa) {
       sky += lights[a] >> 4;
@@ -329,36 +369,39 @@ export class Mesher {
       blk += lights[c] & 15;
       count++;
     }
-    this.sky[k] = Math.round((sky / count) * 16);
-    this.blk[k] = Math.round((blk / count) * 16);
+    this.sky[k] = ((sky * 16) / count + 0.5) | 0;
+    this.blk[k] = ((blk * 16) / count + 0.5) | 0;
   }
 
   private cube(chunk: Chunk, x: number, y: number, z: number, id: number) {
     const ids = this.ids;
-    const meta = this.metas[pIndex(x, y, z)];
-    const snowAbove = id === B.GRASS && ids[pIndex(x, y + 1, z)] === B.SNOW;
+    const p = pIndex(x, y, z);
+    const meta = this.metas[p];
+    const snowAbove = id === B.GRASS && ids[p + P2] === B.SNOW;
     const builder = TRANSLUCENT[id] ? this.transB : this.opaqueB;
+    const span = 16 * UV_SCALE;
     for (let face = 0; face < 6; face++) {
-      const n = NORMALS[face];
-      const fx = x + n[0];
-      const fy = y + n[1];
-      const fz = z + n[2];
-      if (!this.faceVisible(id, ids[pIndex(fx, fy, fz)])) continue;
+      const f = p + FRONT_DELTA[face];
+      if (!this.faceVisible(id, ids[f])) continue;
       const tileIndex = faceTile(id, face, meta, snowAbove, this.options.fancyLeaves);
+      const tx = (tileIndex % ATLAS_TILES) * span;
+      const ty = Math.floor(tileIndex / ATLAS_TILES) * span;
       const corners = FACE_CORNERS[face];
+      const shadeF = FACE_SHADE[face] * 255;
       for (let k = 0; k < 4; k++) {
-        const [cx, cy, cz] = corners[k];
-        this.px[k] = x + cx;
-        this.py[k] = y + cy;
-        this.pz[k] = z + cz;
-        const [u, v] = faceUV(face, cx, cy, cz);
-        this.setUV(tileIndex, k, u, v);
-        this.cornerLight(face, k, fx, fy, fz, cx, cy, cz);
-        this.shade[k] = Math.round(FACE_SHADE[face] * AO_CURVE[this.ao[k]] * 255);
+        const corner = corners[k];
+        this.px[k] = x + corner[0];
+        this.py[k] = y + corner[1];
+        this.pz[k] = z + corner[2];
+        const j = face * 4 + k;
+        this.pu[k] = CUBE_U[j] ? tx + span - 1 : tx + 1;
+        this.pv[k] = CUBE_V[j] ? ty + span - 1 : ty + 1;
+        this.cornerLight(face, k, f);
+        this.shade[k] = (shadeF * AO_CURVE[this.ao[k]] + 0.5) | 0;
       }
-      const [r, g, b] = this.tint(chunk, id, face, x, z);
+      this.tint(chunk, id, face, x, z);
       const flip = this.ao[0] + this.ao[2] < this.ao[1] + this.ao[3];
-      builder.quad(this.px, this.py, this.pz, this.pu, this.pv, this.sky, this.blk, this.shade, r, g, b, flip);
+      builder.quad(this.px, this.py, this.pz, this.pu, this.pv, this.sky, this.blk, this.shade, this.tr, this.tg, this.tb, flip);
     }
   }
 
@@ -380,10 +423,8 @@ export class Mesher {
       // Cactus side faces are inset, but the cactus stacked above hides the top/bottom.
       const tileIndex = faceTile(id, face, meta);
       const corners = FACE_CORNERS[face];
-      // Inset faces take light from their own cell.
-      const lfx = touches[face] ? fx : x;
-      const lfy = touches[face] ? fy : y;
-      const lfz = touches[face] ? fz : z;
+      // Inset faces take light from their own cell, unless the block itself blocks light (farmland).
+      const lf = touches[face] || LIGHT_OPACITY[id] >= 15 ? pIndex(fx, fy, fz) : pIndex(x, y, z);
       for (let k = 0; k < 4; k++) {
         const [cx, cy, cz] = corners[k];
         const lx = face <= 1 ? bounds[face] : cx ? x1 : x0;
@@ -394,11 +435,11 @@ export class Mesher {
         this.pz[k] = z + lz;
         const [u, v] = faceUV(face, lx, ly, lz);
         this.setUV(tileIndex, k, u, v);
-        this.cornerLight(face, k, lfx, lfy, lfz, cx, cy, cz);
+        this.cornerLight(face, k, lf);
         this.shade[k] = Math.round(FACE_SHADE[face] * AO_CURVE[this.ao[k]] * 255);
       }
-      const [r, g, b] = this.tint(chunk, id, face, x, z);
-      builder.quad(this.px, this.py, this.pz, this.pu, this.pv, this.sky, this.blk, this.shade, r, g, b, false);
+      this.tint(chunk, id, face, x, z);
+      builder.quad(this.px, this.py, this.pz, this.pu, this.pv, this.sky, this.blk, this.shade, this.tr, this.tg, this.tb, false);
     }
   }
 
@@ -437,7 +478,10 @@ export class Mesher {
   private cross(chunk: Chunk, x: number, y: number, z: number, id: number) {
     this.ownLight(x, y, z);
     const tileIndex = BLOCKS[id].faces[0];
-    const [r, g, b] = this.tint(chunk, id, 2, x, z);
+    this.tint(chunk, id, 2, x, z);
+    const r = this.tr;
+    const g = this.tg;
+    const b = this.tb;
     const a = 0.15;
     const c = 0.85;
     // Small per-position jitter like Minecraft's random plant offsets.

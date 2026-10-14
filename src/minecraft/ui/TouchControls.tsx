@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { Pressable, StyleSheet, View, type GestureResponderEvent } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import type { Game } from '../game';
 import { McText } from './kit';
@@ -32,9 +33,10 @@ export function TouchControls({ game, width, height, flying }: { game: Game; wid
   const [sneak, setSneak] = useState(false);
   const [jumpDown, setJumpDown] = useState(false);
 
-  const jumpPos = { x: width - 78, y: height - 100 };
-  const sneakPos = { x: width - 150, y: height - 58 };
-  const joyHome = { x: 100, y: height - 105 };
+  const insets = useSafeAreaInsets();
+  const jumpPos = { x: width - 78 - insets.right, y: height - 100 - insets.bottom };
+  const sneakPos = { x: width - 150 - insets.right, y: height - 58 - insets.bottom };
+  const joyHome = { x: 100 + insets.left, y: height - 105 - insets.bottom };
 
   // Detect "hold" on look touches even when the finger does not move.
   useEffect(() => {
@@ -153,8 +155,9 @@ export function TouchControls({ game, width, height, flying }: { game: Game; wid
 
 /** Pause + camera buttons in the top-right corner. */
 export function TopButtons({ game }: { game: Game }) {
+  const insets = useSafeAreaInsets();
   return (
-    <View style={s.top} pointerEvents="box-none">
+    <View style={[s.top, { top: 8 + insets.top, right: 8 + insets.right }]} pointerEvents="box-none">
       <Pressable
         style={s.topButton}
         onPress={() => game.toggleThirdPerson()}>
