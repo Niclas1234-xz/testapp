@@ -71,6 +71,7 @@ export function OptionsScreen({ settings, onChange, onDone }: { settings: Settin
         <McButton small label={`Gehbewegung: ${onOff(settings.viewBobbing)}`} onPress={() => set({ viewBobbing: !settings.viewBobbing })} style={s.option} />
         <McButton small label={`Koordinaten: ${onOff(settings.showCoords)}`} onPress={() => set({ showCoords: !settings.showCoords })} style={s.option} />
         <McButton small label={`Y-Achse umkehren: ${onOff(settings.invertY)}`} onPress={() => set({ invertY: !settings.invertY })} style={s.option} />
+        <McButton small label={`Automatisch springen: ${onOff(settings.autoJump)}`} onPress={() => set({ autoJump: !settings.autoJump })} style={s.option} />
       </ScrollView>
       <McButton label="Fertig" onPress={onDone} style={s.done} />
     </View>

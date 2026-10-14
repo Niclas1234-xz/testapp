@@ -211,6 +211,8 @@ export interface Settings {
   invertY: boolean;
   /** 0..1 */
   soundVolume: number;
+  /** Jump up single-block steps automatically (Bedrock's touch default). */
+  autoJump: boolean;
 }
 
 export const DEFAULT_SETTINGS: Settings = {
@@ -226,6 +228,7 @@ export const DEFAULT_SETTINGS: Settings = {
   gamma: 0.5,
   invertY: false,
   soundVolume: 1,
+  autoJump: Platform.OS !== 'web',
 };
 
 export function loadSettings(): Settings {

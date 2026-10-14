@@ -1,3 +1,4 @@
+import { BLOCKS } from '../blocks';
 import { Inventory, type Slot } from '../inventory';
 import type { World } from '../world/world';
 import { Living } from './entities';
@@ -52,6 +53,7 @@ export class Player extends Living {
   prevWalkDist = 0;
   bob = 0;
   prevBob = 0;
+  autoJump = false;
   /** Called when the player takes fall damage etc. (for sounds/UI). */
   onDamage?: (amount: number) => void;
   difficulty = 2;
@@ -143,6 +145,9 @@ export class Player extends Living {
       this.travel(world, strafe, forward, speed, input.jump, this.sprinting ? 0.026 : 0.02, this.sneaking);
     }
 
+    if (this.autoJump && !this.flying && this.collidedH && this.onGround && !this.inWater && input.forward > 0 && this.stepUpAhead(world))
+      this.vy = 0.42;
+
     const moved = Math.hypot(this.x - startX, this.z - startZ);
     if (this.inWater) this.addExhaustion(0.015 * moved);
     else if (this.sprinting) this.addExhaustion(0.1 * moved);
@@ -155,6 +160,17 @@ export class Player extends Living {
     const eye = this.sneaking ? 1.54 : 1.62;
     this.eyeHeight += (eye - this.eyeHeight) * 0.5;
     this.updateLimbs();
+  }
+
+  /** A single solid block in front at foot level with room above it (for auto-jump). */
+  private stepUpAhead(world: World) {
+    const dx = -Math.sin(this.yaw);
+    const dz = Math.cos(this.yaw);
+    const fx = Math.floor(this.x + dx * 0.7);
+    const fz = Math.floor(this.z + dz * 0.7);
+    const fy = Math.floor(this.y + 0.01);
+    const solid = (y: number) => BLOCKS[world.getBlock(fx, y, fz)].solid;
+    return solid(fy) && !solid(fy + 1) && !solid(fy + 2) && !BLOCKS[world.getBlock(Math.floor(this.x), fy + 2, Math.floor(this.z))].solid;
   }
 
   /** Hunger, regeneration, starvation and drowning (survival only). */

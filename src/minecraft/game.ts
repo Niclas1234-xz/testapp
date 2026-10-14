@@ -202,6 +202,7 @@ export class Game {
     this.mesher = new Mesher({ fancyLeaves: settings.fancyGraphics, smoothLighting: settings.smoothLighting });
     this.player.creative = meta.mode === 'creative';
     this.player.difficulty = settings.difficulty;
+    this.player.autoJump = settings.autoJump;
     if (!meta.spawn) meta.spawn = this.world.gen.findSpawn();
     if (meta.player) this.player.load(meta.player);
     else {
@@ -309,6 +310,7 @@ export class Game {
     const remesh = s.fancyGraphics !== this.settings.fancyGraphics || s.smoothLighting !== this.settings.smoothLighting;
     this.settings = s;
     this.player.difficulty = s.difficulty;
+    this.player.autoJump = s.autoJump;
     sound.setVolume(s.soundVolume);
     this.mesher.options = { fancyLeaves: s.fancyGraphics, smoothLighting: s.smoothLighting };
     if (s.difficulty === 0) this.mobs = this.mobs.filter((m) => !m.info.hostile);
@@ -556,7 +558,12 @@ export class Game {
     const prevHealth = p.health;
     const prevFood = p.food;
     const prevAir = p.air;
-    if (!dead) {
+    // Wait for the terrain under the player (e.g. after respawning far away) before simulating.
+    const loaded = this.world.isLoaded(Math.floor(p.x), Math.floor(p.z));
+    if (!dead && !loaded) {
+      p.savePrev();
+      p.vx = p.vy = p.vz = 0;
+    } else if (!dead) {
       const eating = this.eatingTicks > 0;
       const wasOnGround = p.onGround;
       const wasInWater = p.inWater;
