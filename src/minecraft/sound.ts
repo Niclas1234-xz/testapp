@@ -416,7 +416,7 @@ function nativeBackend(): Backend {
   const pool = (name: SoundName) => {
     let p = pools.get(name);
     if (!p) {
-      const file = new File(Paths.cache, `mc-sound-${name}.wav`);
+      const file = new File(Paths.cache, `mc-sound-v1-${name}.wav`);
       if (!file.exists) {
         file.create({ overwrite: true });
         file.write(wav(synth(name)));

@@ -25,18 +25,25 @@ export function encodePng(rgba: ArrayLike<number>, width: number, height: number
   const h = height * upscale;
   const rowLen = w * 4 + 1;
   const raw = new Uint8Array(rowLen * h);
-  for (let y = 0; y < h; y++) {
-    raw[y * rowLen] = 0; // filter: none
-    const sy = Math.floor(y / upscale);
-    for (let x = 0; x < w; x++) {
-      const sx = Math.floor(x / upscale);
+  for (let sy = 0; sy < height; sy++) {
+    // Build one upscaled row, then repeat it `upscale` times (filter byte 0 = none).
+    const first = sy * upscale * rowLen;
+    let d = first + 1;
+    for (let sx = 0; sx < width; sx++) {
       const s = (sy * width + sx) * 4;
-      const d = y * rowLen + 1 + x * 4;
-      raw[d] = rgba[s];
-      raw[d + 1] = rgba[s + 1];
-      raw[d + 2] = rgba[s + 2];
-      raw[d + 3] = rgba[s + 3];
+      const r = rgba[s];
+      const g = rgba[s + 1];
+      const b = rgba[s + 2];
+      const a = rgba[s + 3];
+      for (let k = 0; k < upscale; k++) {
+        raw[d] = r;
+        raw[d + 1] = g;
+        raw[d + 2] = b;
+        raw[d + 3] = a;
+        d += 4;
+      }
     }
+    for (let k = 1; k < upscale; k++) raw.copyWithin(first + k * rowLen, first, first + rowLen);
   }
 
   // zlib stream with stored (uncompressed) deflate blocks.
@@ -59,9 +66,15 @@ export function encodePng(rgba: ArrayLike<number>, width: number, height: number
   }
   let a = 1;
   let bsum = 0;
-  for (let i = 0; i < raw.length; i++) {
-    a = (a + raw[i]) % 65521;
-    bsum = (bsum + a) % 65521;
+  // Adler-32 with the modulo deferred over blocks (zlib's NMAX).
+  for (let start = 0; start < raw.length; start += 5552) {
+    const end = Math.min(raw.length, start + 5552);
+    for (let i = start; i < end; i++) {
+      a += raw[i];
+      bsum += a;
+    }
+    a %= 65521;
+    bsum %= 65521;
   }
   const adler = ((bsum << 16) | a) >>> 0;
   zlib[p++] = (adler >>> 24) & 0xff;
@@ -107,22 +120,34 @@ function writeU32(buf: Uint8Array, offset: number, v: number) {
 const B64 = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/';
 
 export function base64(bytes: Uint8Array) {
-  let out = '';
+  // Native btoa (browsers, Hermes) is much faster than building the string in JS.
+  const nativeBtoa = (globalThis as { btoa?: (s: string) => string }).btoa;
+  if (typeof nativeBtoa === 'function') {
+    let bin = '';
+    for (let i = 0; i < bytes.length; i += 8192)
+      bin += String.fromCharCode.apply(null, bytes.subarray(i, i + 8192) as unknown as number[]);
+    return nativeBtoa(bin);
+  }
+  // Fallback: two base64 characters per 12 bits via a lookup table.
+  const parts: string[] = [];
   let i = 0;
   for (; i + 2 < bytes.length; i += 3) {
     const n = (bytes[i] << 16) | (bytes[i + 1] << 8) | bytes[i + 2];
-    out += B64[(n >> 18) & 63] + B64[(n >> 12) & 63] + B64[(n >> 6) & 63] + B64[n & 63];
+    parts.push(PAIRS[n >> 12] + PAIRS[n & 4095]);
   }
   const rest = bytes.length - i;
   if (rest === 1) {
     const n = bytes[i] << 16;
-    out += B64[(n >> 18) & 63] + B64[(n >> 12) & 63] + '==';
+    parts.push(B64[(n >> 18) & 63] + B64[(n >> 12) & 63] + '==');
   } else if (rest === 2) {
     const n = (bytes[i] << 16) | (bytes[i + 1] << 8);
-    out += B64[(n >> 18) & 63] + B64[(n >> 12) & 63] + B64[(n >> 6) & 63] + '=';
+    parts.push(B64[(n >> 18) & 63] + B64[(n >> 12) & 63] + B64[(n >> 6) & 63] + '=');
   }
-  return out;
+  return parts.join('');
 }
+
+const PAIRS: string[] = [];
+for (let n = 0; n < 4096; n++) PAIRS.push(B64[n >> 6] + B64[n & 63]);
 
 export function pngDataUri(rgba: ArrayLike<number>, width: number, height: number, upscale = 1) {
   return `data:image/png;base64,${base64(encodePng(rgba, width, height, upscale))}`;

@@ -22,7 +22,8 @@ import { FallingBlock, ItemEntity, Mob, MOBS, wrapAngle, type MobContext, type M
 import { Entity, raycastBlocks, selectionBox, type BlockHit } from './entity/physics';
 import { MAX_AIR, Player, type PlayerInput } from './entity/player';
 import { clickSlot, takeOutput, type ItemStack, type Slot } from './inventory';
-import { I, item, itemName, maxStack } from './items';
+import { itemIcon } from './icons';
+import { creativeItems, I, item, itemName, maxStack } from './items';
 import { consumeIngredients, findRecipe, smeltResult } from './recipes';
 import { lightBrightness, Renderer, type MobRender, type RenderFrame } from './render/renderer';
 import { Mesher } from './render/mesher';
@@ -96,6 +97,7 @@ export interface HudState {
 }
 
 const DIFFICULTY_DAMAGE = [0, 2, 3, 4];
+const WARM_ICONS = creativeItems();
 const BLAST_RESISTANCE: Partial<Record<number, number>> = {
   [B.STONE]: 6,
   [B.COBBLESTONE]: 6,
@@ -179,6 +181,7 @@ export class Game {
   sleepTicks = 0;
   private cloudOffset = 0;
   private lastStep = 0;
+  private iconWarmup = 0;
 
   constructor(meta: WorldMeta, chunks: Map<string, ChunkSave>, settings: Settings) {
     this.meta = meta;
@@ -384,6 +387,9 @@ export class Game {
     if (this.hudDirty) {
       for (const l of this.listeners) l();
     }
+
+    // Pre-render inventory icons in the background, one per frame.
+    if (this.loadedOnce && this.iconWarmup < WARM_ICONS.length) itemIcon(WARM_ICONS[this.iconWarmup++]);
 
     if (now - this.lastSave > 60000 && this.loadedOnce) {
       this.lastSave = now;
