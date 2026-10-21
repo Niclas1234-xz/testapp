@@ -12,7 +12,7 @@ import Animated, {
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { Icon } from '@/components/icon';
-import { AnimatedPressable, PressableScale, useActiveProgress } from '@/components/motion';
+import { AnimatedPressable, PressableScale, useActiveProgress, useFocusFade } from '@/components/motion';
 import { SessionCard } from '@/components/session-card';
 import { Button, Chip, Eyebrow } from '@/components/ui';
 import { useNest } from '@/lib/nest-store';
@@ -37,6 +37,7 @@ const TYPE_CHIPS = [
 ];
 
 export default function BookScreen() {
+  const focusStyle = useFocusFade();
   const insets = useSafeAreaInsets();
   const { type = 'all' } = useLocalSearchParams<{ type?: string }>();
   const { now } = useNest();
@@ -115,7 +116,7 @@ export default function BookScreen() {
       : undefined;
 
   return (
-    <View style={styles.screen}>
+    <Animated.View style={[styles.screen, focusStyle]}>
       <ScrollView
         contentContainerStyle={{ paddingTop: insets.top + 12, paddingBottom: insets.bottom + TAB_BAR_SPACE }}
         showsVerticalScrollIndicator={false}>
@@ -256,7 +257,7 @@ export default function BookScreen() {
         onLocation={setLocation}
         onClose={() => setFiltersOpen(false)}
       />
-    </View>
+    </Animated.View>
   );
 }
 

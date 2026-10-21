@@ -1,13 +1,13 @@
 import { router } from 'expo-router';
 import type { ReactNode } from 'react';
-import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { Pressable, StyleSheet, Text, View } from 'react-native';
 import Animated, { FadeInDown, LinearTransition } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Svg, { Circle } from 'react-native-svg';
 
 import { Icon } from '@/components/icon';
 import { Wordmark } from '@/components/logo';
-import { PressableScale } from '@/components/motion';
+import { PressableScale, useFocusFade } from '@/components/motion';
 import { SessionCard } from '@/components/session-card';
 import { Button, Eyebrow } from '@/components/ui';
 import { useNest } from '@/lib/nest-store';
@@ -22,6 +22,7 @@ function greeting(now: number) {
 }
 
 export default function HomeScreen() {
+  const focusStyle = useFocusFade();
   const insets = useSafeAreaInsets();
   const { user, isBooked, now } = useNest();
   const upcoming = getSchedule(now).sessions.filter((session) => session.start.getTime() > now);
@@ -29,8 +30,8 @@ export default function HomeScreen() {
   const upNext = upcoming.filter((session) => session.id !== nextBooking?.id).slice(0, 3);
 
   return (
-    <ScrollView
-      style={styles.screen}
+    <Animated.ScrollView
+      style={[styles.screen, focusStyle]}
       contentContainerStyle={{ paddingTop: insets.top + 12, paddingBottom: insets.bottom + TAB_BAR_SPACE }}
       showsVerticalScrollIndicator={false}>
       <Animated.View entering={FadeInDown.duration(500)} style={styles.topBar}>
@@ -107,7 +108,7 @@ export default function HomeScreen() {
             ))}
         </View>
       </Section>
-    </ScrollView>
+    </Animated.ScrollView>
   );
 }
 

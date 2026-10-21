@@ -3,10 +3,13 @@ import { router, useLocalSearchParams } from 'expo-router';
 import { useEffect, useRef, useState } from 'react';
 import { ScrollView, StyleSheet, Text, View } from 'react-native';
 import Animated, {
+  Easing,
   FadeIn,
   FadeInDown,
   interpolateColor,
   useAnimatedStyle,
+  useSharedValue,
+  withTiming,
   ZoomIn,
 } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -16,7 +19,7 @@ import { ModalHeader } from '@/components/modal-header';
 import { AnimatedPressable, PressableScale, useActiveProgress } from '@/components/motion';
 import { openInstructor } from '@/components/session-card';
 import { Button } from '@/components/ui';
-import { DEMO_CARD, useNest, type PaymentMethod } from '@/lib/nest-store';
+import { DEMO_CARD, useNest, type Booking, type PaymentMethod } from '@/lib/nest-store';
 import {
   endTime,
   formatShortDay,
@@ -29,7 +32,10 @@ import {
 } from '@/lib/schedule';
 import { colors, fonts, radius } from '@/lib/theme';
 
-type Step = 'review' | 'processing' | 'done';
+type Step = 'review' | 'processing' | 'done' | 'cancelled';
+
+// How long the "cancelled" confirmation stays before returning to the previous screen.
+const CANCEL_CONFIRM_MS = 2200;
 
 export default function BookingScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
@@ -37,9 +43,10 @@ export default function BookingScreen() {
   const { bookingFor, book, cancel, creditsLeft, now } = useNest();
   const [choice, setChoice] = useState<PaymentMethod>('credits');
   const [step, setStep] = useState<Step>('review');
+  const [cancelled, setCancelled] = useState<Booking | null>(null);
   const pending = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  // Closing the screen while the payment is "processing" must not book anything.
+  // Closing the screen early must neither book anything nor navigate back a second time.
   useEffect(
     () => () => {
       if (pending.current) clearTimeout(pending.current);
@@ -79,6 +86,31 @@ export default function BookingScreen() {
         Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
       }
     }, 900);
+  }
+
+  function cancelBooking(current: Booking) {
+    cancel(sessionId);
+    setCancelled(current);
+    setStep('cancelled');
+    if (process.env.EXPO_OS !== 'web') {
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning);
+    }
+    pending.current = setTimeout(() => {
+      pending.current = null;
+      router.back();
+    }, CANCEL_CONFIRM_MS);
+  }
+
+  if (step === 'cancelled' && cancelled) {
+    return (
+      <View style={styles.screen}>
+        <ModalHeader title="Cancelled" />
+        <Cancelled session={session} booking={cancelled} />
+        <View style={[styles.footer, { paddingBottom: footerPadding }]}>
+          <Button label="Done" onPress={() => router.back()} style={styles.flex} />
+        </View>
+      </View>
+    );
   }
 
   if (step === 'done') {
@@ -165,7 +197,7 @@ export default function BookingScreen() {
           <Button
             label={booking.waitlist ? 'Leave waitlist' : 'Cancel booking'}
             variant="outline"
-            onPress={() => cancel(sessionId)}
+            onPress={() => cancelBooking(booking)}
             style={styles.flex}
           />
         ) : (
@@ -300,6 +332,43 @@ function PaymentOption({
         <Animated.View style={[styles.radioDot, dotStyle]} />
       </View>
     </AnimatedPressable>
+  );
+}
+
+function Cancelled({ session, booking }: { session: Session; booking: Booking }) {
+  const countdown = useSharedValue(0);
+  useEffect(() => {
+    countdown.set(withTiming(1, { duration: CANCEL_CONFIRM_MS, easing: Easing.linear }));
+  }, [countdown]);
+  const barStyle = useAnimatedStyle(() => ({ width: `${countdown.get() * 100}%` }));
+
+  const refund = booking.waitlist
+    ? 'Nothing was charged'
+    : booking.method === 'credits'
+      ? '1 credit returned to your account'
+      : `CHF ${session.priceChf} refunded to ${DEMO_CARD}`;
+
+  return (
+    <View style={styles.success}>
+      <Animated.View entering={ZoomIn.springify().damping(12)} style={styles.cancelBadge}>
+        <Icon name="close" size={36} color={colors.ink} strokeWidth={1.4} />
+      </Animated.View>
+      <Animated.Text entering={FadeInDown.delay(150).duration(400)} style={styles.successTitle}>
+        {booking.waitlist ? 'You’ve left the waitlist.' : 'Your booking has been cancelled.'}
+      </Animated.Text>
+      <Animated.Text entering={FadeInDown.delay(230).duration(400)} style={styles.successText}>
+        {session.title}
+        {'\n'}
+        {formatShortDay(session.start)} · {formatTime(session.start)} · {session.location}
+      </Animated.Text>
+      <Animated.View entering={FadeInDown.delay(310).duration(400)} style={styles.paidPill}>
+        <Icon name={booking.method === 'credits' ? 'rings' : 'card'} size={14} color={colors.bronze} />
+        <Text style={styles.paidText}>{refund}</Text>
+      </Animated.View>
+      <Animated.View entering={FadeIn.delay(400).duration(300)} style={styles.countdown}>
+        <Animated.View style={[styles.countdownFill, barStyle]} />
+      </Animated.View>
+    </View>
   );
 }
 
@@ -657,6 +726,26 @@ const styles = StyleSheet.create({
     fontFamily: fonts.medium,
     fontSize: 12,
     color: colors.inkSoft,
+  },
+  cancelBadge: {
+    width: 104,
+    height: 104,
+    borderRadius: 52,
+    backgroundColor: colors.sand,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  countdown: {
+    marginTop: 28,
+    width: 120,
+    height: 3,
+    borderRadius: 2,
+    backgroundColor: colors.line,
+    overflow: 'hidden',
+  },
+  countdownFill: {
+    height: '100%',
+    backgroundColor: colors.bronze,
   },
   hint: {
     fontFamily: fonts.regular,

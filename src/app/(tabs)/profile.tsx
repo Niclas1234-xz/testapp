@@ -1,14 +1,14 @@
 import { router } from 'expo-router';
 import * as WebBrowser from 'expo-web-browser';
 import { useState } from 'react';
-import { Alert, Pressable, ScrollView, StyleSheet, Switch, Text, TextInput, View } from 'react-native';
+import { Alert, Pressable, StyleSheet, Switch, Text, TextInput, View } from 'react-native';
 import Animated, { FadeIn, FadeInDown, FadeOut, LinearTransition } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Svg, { Circle } from 'react-native-svg';
 
 import { Icon, type IconName } from '@/components/icon';
 import { Monogram } from '@/components/logo';
-import { PressableScale } from '@/components/motion';
+import { PressableScale, useFocusFade } from '@/components/motion';
 import { openSession } from '@/components/session-card';
 import { Button, Eyebrow } from '@/components/ui';
 import { useNest } from '@/lib/nest-store';
@@ -18,6 +18,7 @@ import { colors, fonts, radius, TAB_BAR_SPACE } from '@/lib/theme';
 const WEBSITE = 'https://www.thewellnest.ch';
 
 export default function ProfileScreen() {
+  const focusStyle = useFocusFade();
   const insets = useSafeAreaInsets();
   const { user, bookedIds, creditsLeft, logOut, now } = useNest();
   const [newsletter, setNewsletter] = useState(false);
@@ -49,8 +50,8 @@ export default function ProfileScreen() {
   ];
 
   return (
-    <ScrollView
-      style={styles.screen}
+    <Animated.ScrollView
+      style={[styles.screen, focusStyle]}
       contentContainerStyle={{ paddingTop: insets.top + 12, paddingBottom: insets.bottom + TAB_BAR_SPACE }}
       keyboardShouldPersistTaps="handled"
       automaticallyAdjustKeyboardInsets
@@ -151,7 +152,7 @@ export default function ProfileScreen() {
           ))}
         </View>
       </Animated.View>
-    </ScrollView>
+    </Animated.ScrollView>
   );
 }
 

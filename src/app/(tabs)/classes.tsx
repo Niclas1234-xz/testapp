@@ -1,6 +1,6 @@
 import { router, useLocalSearchParams } from 'expo-router';
 import { useState } from 'react';
-import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { Pressable, StyleSheet, Text, View } from 'react-native';
 import Animated, {
   FadeIn,
   FadeInDown,
@@ -11,18 +11,19 @@ import Animated, {
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { Icon } from '@/components/icon';
-import { useActiveProgress } from '@/components/motion';
+import { useActiveProgress, useFocusFade } from '@/components/motion';
 import { Button, Eyebrow } from '@/components/ui';
 import { classTypes, type ClassType } from '@/lib/schedule';
 import { colors, fonts, radius, TAB_BAR_SPACE } from '@/lib/theme';
 
 export default function ClassesScreen() {
+  const focusStyle = useFocusFade();
   const insets = useSafeAreaInsets();
   const { focus } = useLocalSearchParams<{ focus?: string }>();
 
   return (
-    <ScrollView
-      style={styles.screen}
+    <Animated.ScrollView
+      style={[styles.screen, focusStyle]}
       contentContainerStyle={{ paddingTop: insets.top + 12, paddingBottom: insets.bottom + TAB_BAR_SPACE }}
       showsVerticalScrollIndicator={false}>
       <View style={styles.header}>
@@ -46,7 +47,7 @@ export default function ClassesScreen() {
             </Animated.View>
           ))}
       </View>
-    </ScrollView>
+    </Animated.ScrollView>
   );
 }
 

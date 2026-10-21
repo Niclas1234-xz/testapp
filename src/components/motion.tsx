@@ -1,6 +1,8 @@
-import { useEffect } from 'react';
+import { useFocusEffect } from 'expo-router';
+import { useCallback, useEffect } from 'react';
 import { Pressable, type PressableProps, type StyleProp, type ViewStyle } from 'react-native';
 import Animated, {
+  Easing,
   useAnimatedStyle,
   useSharedValue,
   withSpring,
@@ -18,6 +20,25 @@ export function useActiveProgress(active: boolean, duration = 220) {
     progress.set(withTiming(active ? 1 : 0, { duration }));
   }, [active, duration, progress]);
   return progress;
+}
+
+/**
+ * Soft fade-and-rise each time a tab screen comes into focus. Replaces the tab navigator's own
+ * fade, which could leave a screen invisible after quick tab switches. Opacity never drops
+ * below 0.4, so even an interrupted animation cannot hide the screen.
+ */
+export function useFocusFade() {
+  const progress = useSharedValue(1);
+  useFocusEffect(
+    useCallback(() => {
+      progress.set(0);
+      progress.set(withTiming(1, { duration: 240, easing: Easing.out(Easing.cubic) }));
+    }, [progress])
+  );
+  return useAnimatedStyle(() => ({
+    opacity: 0.4 + 0.6 * progress.get(),
+    transform: [{ translateY: (1 - progress.get()) * 8 }],
+  }));
 }
 
 type PressableScaleProps = Omit<PressableProps, 'style'> & {

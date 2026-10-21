@@ -115,11 +115,7 @@ export default function TabsLayout() {
   return (
     <Tabs
       tabBar={(props) => <FloatingTabBar {...props} />}
-      screenOptions={{
-        headerShown: false,
-        animation: 'fade',
-        sceneStyle: { backgroundColor: colors.background },
-      }}>
+      screenOptions={{ headerShown: false, sceneStyle: { backgroundColor: colors.background } }}>
       <Tabs.Screen name="index" options={{ title: 'Home' }} />
       <Tabs.Screen name="book" options={{ title: 'Book' }} />
       <Tabs.Screen name="classes" options={{ title: 'Classes' }} />
