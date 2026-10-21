@@ -9,10 +9,16 @@ export type ClassTypeId = 'sculpt' | 'mat-pilates' | 'yoga' | 'event';
 export type ClassType = {
   id: ClassTypeId;
   name: string;
+  /** Short name for tight spaces such as the class switcher. */
+  shortName: string;
   label: string;
   category: 'Class' | 'Special event';
   icon: IconName;
   color: string;
+  /** Darker tone of `color` that keeps cream text readable on top of it. */
+  deepColor: string;
+  /** One line answering "which class is for me?". */
+  match: string;
   tagline: string;
   description: string[];
   expect: string[];
@@ -23,10 +29,13 @@ export const classTypes: ClassType[] = [
   {
     id: 'sculpt',
     name: 'Sculpt',
+    shortName: 'Sculpt',
     label: 'Signature class',
     category: 'Class',
     icon: 'rings',
     color: colors.bronze,
+    deepColor: '#5C4835',
+    match: 'You want energy, music and a full-body burn.',
     tagline:
       'Our signature Wellnest experience - a rhythm-led, full-body practice designed to build strength, create energy and bring you back into the here and now.',
     description: [
@@ -51,10 +60,13 @@ export const classTypes: ClassType[] = [
   {
     id: 'mat-pilates',
     name: 'Mat Pilates',
+    shortName: 'Pilates',
     label: 'Classic Pilates',
     category: 'Class',
     icon: 'ringsVertical',
     color: colors.olive,
+    deepColor: colors.oliveDeep,
+    match: 'You want deep strength, control and better posture.',
     tagline: 'Precision, alignment and deep strength - connecting you to the power within.',
     description: [
       'Our take on a modern Pilates practice - rooted in its foundational principles while bringing a steady, intentional flow to the mat.',
@@ -78,10 +90,13 @@ export const classTypes: ClassType[] = [
   {
     id: 'yoga',
     name: 'Yoga Flow',
+    shortName: 'Yoga',
     label: 'Yoga',
     category: 'Class',
     icon: 'lotus',
     color: colors.sage,
+    deepColor: '#46503D',
+    match: 'You want to slow down, breathe and move more freely.',
     tagline: 'Finding space in the body. Stillness in the mind.',
     description: [
       'A mindful, flowing practice designed to bring balance, grounding, and calm into both body and mind.',
@@ -105,10 +120,13 @@ export const classTypes: ClassType[] = [
   {
     id: 'event',
     name: 'Special Event',
+    shortName: 'Events',
     label: 'The Network',
     category: 'Special event',
     icon: 'spark',
     color: colors.terracotta,
+    deepColor: '#6B4B3A',
+    match: 'You want longer formats, live music and community.',
     tagline: 'Movement, music, nourishment and connection - gathered into one moment.',
     description: [
       'Our special events bring the community together beyond the mat: longer formats, live sound and something good to eat afterwards.',

@@ -7,6 +7,8 @@ import { DefaultTheme, Stack, ThemeProvider, type Theme } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
 import { StatusBar } from 'expo-status-bar';
 import { useState } from 'react';
+import { StyleSheet } from 'react-native';
+import { GestureHandlerRootView } from 'react-native-gesture-handler';
 
 import { Intro } from '@/components/intro';
 import { prefetchLogos } from '@/components/logo';
@@ -50,18 +52,26 @@ export default function RootLayout() {
   if (!loaded && !error) return null;
 
   return (
-    <ThemeProvider value={theme}>
-      <NestProvider>
-        <Stack screenOptions={{ headerShown: false }}>
-          <Stack.Screen name="(tabs)" />
-          <Stack.Screen name="session/[id]" options={modalOptions} />
-          <Stack.Screen name="instructor/[id]" options={modalOptions} />
-        </Stack>
-        {introVisible && (
-          <Intro onShown={() => SplashScreen.hide()} onDone={() => setIntroVisible(false)} />
-        )}
-        <StatusBar style="dark" />
-      </NestProvider>
-    </ThemeProvider>
+    <GestureHandlerRootView style={styles.root}>
+      <ThemeProvider value={theme}>
+        <NestProvider>
+          <Stack screenOptions={{ headerShown: false }}>
+            <Stack.Screen name="(tabs)" />
+            <Stack.Screen name="session/[id]" options={modalOptions} />
+            <Stack.Screen name="instructor/[id]" options={modalOptions} />
+          </Stack>
+          {introVisible && (
+            <Intro onShown={() => SplashScreen.hide()} onDone={() => setIntroVisible(false)} />
+          )}
+          <StatusBar style="dark" />
+        </NestProvider>
+      </ThemeProvider>
+    </GestureHandlerRootView>
   );
 }
+
+const styles = StyleSheet.create({
+  root: {
+    flex: 1,
+  },
+});

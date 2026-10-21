@@ -10,7 +10,7 @@ Buchungen und Login funktionieren nur lokal in der App und gehen beim Neuladen v
 | --- | --- | --- |
 | Home | `src/app/(tabs)/index.tsx` | Hero mit „Book a class", deine nächste Buchung, die nächsten drei Kurse, Kursarten |
 | Book | `src/app/(tabs)/book.tsx` | Woche und Tag wählen, Kursart-Chips, Filter nach Instructor im Sheet, Kursliste |
-| Classes | `src/app/(tabs)/classes.tsx` | Signature Class (Sculpt), Classic Pilates, Yoga mit Beschreibung und „See times" |
+| Classes | `src/app/(tabs)/classes.tsx` | Umschalter Sculpt / Pilates / Yoga (auch per Wischen), je Klasse: Kopfkarte, „Good for", „What to expect", Beschreibung, Button zu den Zeiten; dazu „Which class is for me?" |
 | Nest | `src/app/(tabs)/profile.tsx` | Demo-Login, Mitgliedskarte mit Credits, „My bookings", Newsletter, Location (Google Maps), Einstellungen |
 
 Dazu zwei Modals: `src/app/session/[id].tsx` (Checkout: Kurs-Ticket mit Datum, Zeit, Ort und
