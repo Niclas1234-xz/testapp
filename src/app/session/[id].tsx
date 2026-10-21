@@ -3,13 +3,10 @@ import { router, useLocalSearchParams } from 'expo-router';
 import { useEffect, useRef, useState } from 'react';
 import { ScrollView, StyleSheet, Text, View } from 'react-native';
 import Animated, {
-  Easing,
   FadeIn,
   FadeInDown,
   interpolateColor,
   useAnimatedStyle,
-  useSharedValue,
-  withTiming,
   ZoomIn,
 } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -35,9 +32,6 @@ import { colors, fonts, radius } from '@/lib/theme';
 
 type Step = 'review' | 'processing' | 'done' | 'cancelled';
 
-// How long the "cancelled" confirmation stays before returning to the previous screen.
-const CANCEL_CONFIRM_MS = 2200;
-
 export default function BookingScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const insets = useSafeAreaInsets();
@@ -47,7 +41,7 @@ export default function BookingScreen() {
   const [cancelled, setCancelled] = useState<Booking | null>(null);
   const pending = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  // Closing the screen early must neither book anything nor navigate back a second time.
+  // Closing the screen while the payment is "processing" must not book anything.
   useEffect(
     () => () => {
       if (pending.current) clearTimeout(pending.current);
@@ -96,10 +90,7 @@ export default function BookingScreen() {
     if (process.env.EXPO_OS !== 'web') {
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning);
     }
-    pending.current = setTimeout(() => {
-      pending.current = null;
-      router.back();
-    }, CANCEL_CONFIRM_MS);
+    // The confirmation stays until "Done" is tapped.
   }
 
   if (step === 'cancelled' && cancelled) {
@@ -337,12 +328,6 @@ function PaymentOption({
 }
 
 function Cancelled({ session, booking }: { session: Session; booking: Booking }) {
-  const countdown = useSharedValue(0);
-  useEffect(() => {
-    countdown.set(withTiming(1, { duration: CANCEL_CONFIRM_MS, easing: Easing.linear }));
-  }, [countdown]);
-  const barStyle = useAnimatedStyle(() => ({ width: `${countdown.get() * 100}%` }));
-
   const refund = booking.waitlist
     ? 'Nothing was charged'
     : booking.method === 'credits'
@@ -365,9 +350,6 @@ function Cancelled({ session, booking }: { session: Session; booking: Booking })
       <Animated.View entering={FadeInDown.delay(310).duration(400)} style={styles.paidPill}>
         <Icon name={booking.method === 'credits' ? 'rings' : 'card'} size={14} color={colors.bronze} />
         <Text style={styles.paidText}>{refund}</Text>
-      </Animated.View>
-      <Animated.View entering={FadeIn.delay(400).duration(300)} style={styles.countdown}>
-        <Animated.View style={[styles.countdownFill, barStyle]} />
       </Animated.View>
     </View>
   );
@@ -735,18 +717,6 @@ const styles = StyleSheet.create({
     backgroundColor: colors.sand,
     alignItems: 'center',
     justifyContent: 'center',
-  },
-  countdown: {
-    marginTop: 28,
-    width: 120,
-    height: 3,
-    borderRadius: 2,
-    backgroundColor: colors.line,
-    overflow: 'hidden',
-  },
-  countdownFill: {
-    height: '100%',
-    backgroundColor: colors.bronze,
   },
   hint: {
     fontFamily: fonts.regular,
