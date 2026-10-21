@@ -4,15 +4,14 @@ import { useEffect, useState } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 import { Gesture, GestureDetector } from 'react-native-gesture-handler';
 import Animated, {
-  FadeIn,
+  Easing,
   FadeInDown,
-  FadeInLeft,
-  FadeInRight,
   interpolateColor,
   useAnimatedRef,
   useAnimatedStyle,
   useSharedValue,
   withSpring,
+  withTiming,
 } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Svg, { Circle } from 'react-native-svg';
@@ -27,6 +26,10 @@ import { colors, fonts, radius, TAB_BAR_SPACE } from '@/lib/theme';
 const CLASSES = classTypes.filter((type) => type.id !== 'event');
 const SWITCHER_PADDING = 4;
 const SWIPE_DISTANCE = 50;
+// Switching classes: the current one fades out, the content swaps while invisible, the new one
+// fades back in.
+const FADE_OUT = 130;
+const FADE_IN = 260;
 
 export default function ClassesScreen() {
   const focusStyle = useFocusFade();
@@ -40,9 +43,24 @@ export default function ClassesScreen() {
   );
   const selected = CLASSES[index];
 
-  // Remember which way we moved, so the new class slides in from the matching side.
-  const [shown, setShown] = useState({ index, direction: 1 });
-  if (shown.index !== index) setShown({ index, direction: index > shown.index ? 1 : -1 });
+  // The class on screen trails the selection by one fade-out.
+  const [displayed, setDisplayed] = useState(index);
+  const fade = useSharedValue(1);
+
+  useEffect(() => {
+    if (index === displayed) return;
+    fade.set(withTiming(0, { duration: FADE_OUT, easing: Easing.in(Easing.quad) }));
+    const swap = setTimeout(() => {
+      setDisplayed(index);
+      fade.set(withTiming(1, { duration: FADE_IN, easing: Easing.out(Easing.cubic) }));
+    }, FADE_OUT);
+    return () => clearTimeout(swap);
+  }, [index, displayed, fade]);
+
+  const pageStyle = useAnimatedStyle(() => ({
+    opacity: fade.get(),
+    transform: [{ translateY: (1 - fade.get()) * 6 }],
+  }));
 
   function select(id: ClassTypeId) {
     if (id === selected.id) return;
@@ -76,9 +94,9 @@ export default function ClassesScreen() {
       </Animated.View>
 
       <GestureDetector gesture={swipe}>
-        <View style={styles.page}>
-          <ClassPage key={selected.id} type={selected} direction={shown.direction} />
-        </View>
+        <Animated.View style={[styles.page, pageStyle]}>
+          <ClassPage type={CLASSES[displayed]} />
+        </Animated.View>
       </GestureDetector>
 
       <Animated.View entering={FadeInDown.delay(240).duration(450)} style={styles.matchSection}>
@@ -154,11 +172,9 @@ function SwitcherItem({ label, active, onPress }: { label: string; active: boole
   );
 }
 
-function ClassPage({ type, direction }: { type: ClassType; direction: number }) {
-  const slideIn = (direction > 0 ? FadeInRight : FadeInLeft).duration(380);
-
+function ClassPage({ type }: { type: ClassType }) {
   return (
-    <Animated.View entering={slideIn}>
+    <View>
       <View style={[styles.hero, { backgroundColor: type.deepColor }]}>
         <Svg width={220} height={220} style={styles.heroRings}>
           <Circle cx={80} cy={110} r={76} stroke="rgba(246,241,234,0.12)" fill="none" />
@@ -178,25 +194,22 @@ function ClassPage({ type, direction }: { type: ClassType; direction: number }) 
 
       <Text style={styles.sectionLabel}>Good for</Text>
       <View style={styles.features}>
-        {type.features.map((feature, i) => (
-          <Animated.View
-            key={feature.label}
-            entering={FadeInDown.delay(120 + i * 70).duration(400)}
-            style={styles.feature}>
+        {type.features.map((feature) => (
+          <View key={feature.label} style={styles.feature}>
             <View style={styles.featureIcon}>
               <Icon name={feature.icon} size={22} color={type.color} strokeWidth={1.3} />
             </View>
             <Text style={styles.featureText}>{feature.label}</Text>
-          </Animated.View>
+          </View>
         ))}
       </View>
 
       <Text style={styles.sectionLabel}>What to expect</Text>
       <View style={styles.chips}>
-        {type.expect.map((item, i) => (
-          <Animated.View key={item} entering={FadeIn.delay(220 + i * 45).duration(300)} style={styles.chip}>
+        {type.expect.map((item) => (
+          <View key={item} style={styles.chip}>
             <Text style={styles.chipText}>{item}</Text>
-          </Animated.View>
+          </View>
         ))}
       </View>
 
@@ -215,7 +228,7 @@ function ClassPage({ type, direction }: { type: ClassType; direction: number }) 
         onPress={() => router.navigate({ pathname: '/book', params: { type: type.id } })}
         style={styles.cta}
       />
-    </Animated.View>
+    </View>
   );
 }
 
