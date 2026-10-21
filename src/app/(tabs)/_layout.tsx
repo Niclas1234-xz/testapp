@@ -10,7 +10,7 @@ import Animated, {
 } from 'react-native-reanimated';
 
 import { Icon, type IconName } from '@/components/icon';
-import { PressableScale, useActiveProgress } from '@/components/motion';
+import { ALWAYS, PressableScale, useActiveProgress } from '@/components/motion';
 import { colors, fonts, radius } from '@/lib/theme';
 
 const TAB_ICONS: Record<string, IconName> = {
@@ -72,7 +72,7 @@ function FloatingTabBar({ state, descriptors, navigation, insets }: BottomTabBar
   const position = useSharedValue(state.index);
 
   useEffect(() => {
-    position.set(withSpring(state.index, { damping: 18, stiffness: 200, mass: 0.8 }));
+    position.set(withSpring(state.index, { damping: 18, stiffness: 200, mass: 0.8, reduceMotion: ALWAYS }));
   }, [state.index, position]);
 
   const indicatorStyle = useAnimatedStyle(() => ({
