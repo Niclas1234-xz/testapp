@@ -7,6 +7,7 @@ import Animated, {
   Easing,
   FadeInDown,
   interpolateColor,
+  ReduceMotion,
   useAnimatedRef,
   useAnimatedStyle,
   useSharedValue,
@@ -27,9 +28,11 @@ const CLASSES = classTypes.filter((type) => type.id !== 'event');
 const SWITCHER_PADDING = 4;
 const SWIPE_DISTANCE = 50;
 // Switching classes: the current one fades out, the content swaps while invisible, the new one
-// fades back in.
-const FADE_OUT = 130;
-const FADE_IN = 260;
+// fades back in. A fade is not motion in the accessibility sense, so it also plays with
+// "reduce motion" or battery saver on (Reanimated would otherwise skip it).
+const FADE_OUT = 160;
+const FADE_IN = 320;
+const never = ReduceMotion.Never;
 
 export default function ClassesScreen() {
   const focusStyle = useFocusFade();
@@ -49,10 +52,10 @@ export default function ClassesScreen() {
 
   useEffect(() => {
     if (index === displayed) return;
-    fade.set(withTiming(0, { duration: FADE_OUT, easing: Easing.in(Easing.quad) }));
+    fade.set(withTiming(0, { duration: FADE_OUT, easing: Easing.in(Easing.quad), reduceMotion: never }));
     const swap = setTimeout(() => {
       setDisplayed(index);
-      fade.set(withTiming(1, { duration: FADE_IN, easing: Easing.out(Easing.cubic) }));
+      fade.set(withTiming(1, { duration: FADE_IN, easing: Easing.out(Easing.cubic), reduceMotion: never }));
     }, FADE_OUT);
     return () => clearTimeout(swap);
   }, [index, displayed, fade]);
@@ -131,7 +134,7 @@ function ClassSwitcher({ index, onSelect }: { index: number; onSelect: (id: Clas
   const segment = width / CLASSES.length;
 
   useEffect(() => {
-    position.set(withSpring(index, { damping: 18, stiffness: 200, mass: 0.8 }));
+    position.set(withSpring(index, { damping: 18, stiffness: 200, mass: 0.8, reduceMotion: never }));
   }, [index, position]);
 
   const indicatorStyle = useAnimatedStyle(() => ({
