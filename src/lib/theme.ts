@@ -32,4 +32,4 @@ export const radius = {
 } as const;
 
 // Space the floating tab bar takes up above the bottom safe-area inset.
-export const TAB_BAR_SPACE = 96;
+export const TAB_BAR_SPACE = 112;

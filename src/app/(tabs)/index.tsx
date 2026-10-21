@@ -1,7 +1,7 @@
 import { router } from 'expo-router';
 import type { ReactNode } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
-import Animated, { FadeInDown, LinearTransition } from 'react-native-reanimated';
+import Animated, { FadeInDown } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Svg, { Circle } from 'react-native-svg';
 
@@ -83,9 +83,7 @@ export default function HomeScreen() {
         }>
         <View style={styles.list}>
           {upNext.map((session) => (
-            <Animated.View key={session.id} layout={LinearTransition}>
-              <SessionCard session={session} showDay />
-            </Animated.View>
+            <SessionCard key={session.id} session={session} showDay />
           ))}
         </View>
       </Section>
@@ -124,10 +122,7 @@ function Section({
   children: ReactNode;
 }) {
   return (
-    <Animated.View
-      entering={FadeInDown.delay(delay).duration(550)}
-      layout={LinearTransition}
-      style={styles.section}>
+    <Animated.View entering={FadeInDown.delay(delay).duration(550)} style={styles.section}>
       <View style={styles.sectionHeader}>
         <Text style={styles.sectionTitle}>{title}</Text>
         {action}

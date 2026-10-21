@@ -1,13 +1,7 @@
 import { router, useLocalSearchParams } from 'expo-router';
 import { useState } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
-import Animated, {
-  FadeIn,
-  FadeInDown,
-  FadeOut,
-  LinearTransition,
-  useAnimatedStyle,
-} from 'react-native-reanimated';
+import Animated, { FadeIn, FadeInDown, useAnimatedStyle } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { Icon } from '@/components/icon';
@@ -38,10 +32,7 @@ export default function ClassesScreen() {
         {classTypes
           .filter((type) => type.id !== 'event')
           .map((type, index) => (
-            <Animated.View
-              key={type.id}
-              entering={FadeInDown.delay(index * 90).duration(500)}
-              layout={cardLayout}>
+            <Animated.View key={type.id} entering={FadeInDown.delay(index * 90).duration(500)}>
               {/* Remount when opened from the home screen so the chosen class starts expanded. */}
               <ClassCard key={focus ?? 'none'} type={type} initiallyOpen={focus === type.id} />
             </Animated.View>
@@ -51,9 +42,6 @@ export default function ClassesScreen() {
   );
 }
 
-// Cards below an expanding card slide down instead of jumping.
-const cardLayout = LinearTransition.springify().damping(22).stiffness(200);
-
 function ClassCard({ type, initiallyOpen }: { type: ClassType; initiallyOpen: boolean }) {
   const [open, setOpen] = useState(initiallyOpen);
   const progress = useActiveProgress(open, 300);
@@ -61,8 +49,9 @@ function ClassCard({ type, initiallyOpen }: { type: ClassType; initiallyOpen: bo
     transform: [{ rotate: `${progress.get() * 180}deg` }],
   }));
 
+  // Plain View: layout transitions here could leave cards offset on the phone (see Nest).
   return (
-    <Animated.View layout={cardLayout} style={styles.card}>
+    <View style={styles.card}>
       <View style={styles.cardHeader}>
         <View style={styles.iconCircle}>
           <Icon name={type.icon} size={30} color={type.color} strokeWidth={1.1} />
@@ -85,10 +74,7 @@ function ClassCard({ type, initiallyOpen }: { type: ClassType; initiallyOpen: bo
       </View>
 
       {open && (
-        <Animated.View
-          entering={FadeIn.delay(120).duration(300)}
-          exiting={FadeOut.duration(150)}
-          style={styles.more}>
+        <Animated.View entering={FadeIn.duration(300)} style={styles.more}>
           {type.description.map((paragraph) => (
             <Text key={paragraph} style={styles.paragraph}>
               {paragraph}
@@ -113,7 +99,7 @@ function ClassCard({ type, initiallyOpen }: { type: ClassType; initiallyOpen: bo
           onPress={() => router.navigate({ pathname: '/book', params: { type: type.id } })}
         />
       </View>
-    </Animated.View>
+    </View>
   );
 }
 

@@ -1,8 +1,8 @@
 import { router } from 'expo-router';
 import * as WebBrowser from 'expo-web-browser';
 import { useState } from 'react';
-import { Alert, Pressable, StyleSheet, Switch, Text, TextInput, View } from 'react-native';
-import Animated, { FadeIn, FadeInDown, FadeOut, LinearTransition } from 'react-native-reanimated';
+import { Alert, Keyboard, Pressable, StyleSheet, Switch, Text, TextInput, View } from 'react-native';
+import Animated, { FadeIn, FadeInDown } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Svg, { Circle } from 'react-native-svg';
 
@@ -88,15 +88,15 @@ export default function ProfileScreen() {
           </View>
         </Animated.View>
       ) : (
-        <Animated.View key="login" entering={FadeInDown.duration(450)} exiting={FadeOut.duration(200)}>
+        <Animated.View key="login" entering={FadeInDown.duration(450)}>
           <LoginCard />
         </Animated.View>
       )}
 
-      <Animated.View
-        entering={FadeInDown.delay(100).duration(450)}
-        layout={LinearTransition}
-        style={styles.section}>
+      {/* No layout animations here: when the login card swaps for the shorter member card, an
+          interrupted layout transition left these sections shifted down on the phone, with
+          "Log out" pushed out of reach. */}
+      <Animated.View entering={FadeInDown.delay(100).duration(450)} style={styles.section}>
         <Text style={styles.sectionTitle}>My bookings</Text>
         {bookings.length === 0 ? (
           <View style={styles.empty}>
@@ -107,11 +107,7 @@ export default function ProfileScreen() {
         ) : (
           <View style={styles.list}>
             {bookings.map((session, index) => (
-              <Animated.View
-                key={session.id}
-                entering={FadeIn}
-                exiting={FadeOut}
-                layout={LinearTransition}>
+              <Animated.View key={session.id} entering={FadeIn}>
                 <BookingRow session={session} last={index === bookings.length - 1} />
               </Animated.View>
             ))}
@@ -119,10 +115,7 @@ export default function ProfileScreen() {
         )}
       </Animated.View>
 
-      <Animated.View
-        entering={FadeInDown.delay(180).duration(450)}
-        layout={LinearTransition}
-        style={styles.section}>
+      <Animated.View entering={FadeInDown.delay(180).duration(450)} style={styles.section}>
         <Text style={styles.sectionTitle}>Settings</Text>
         <View style={styles.list}>
           <View style={styles.settingRow}>
@@ -166,6 +159,12 @@ function LoginCard() {
   const [password, setPassword] = useState('');
   const valid = /\S+@\S+\.\S+/.test(email) && password.length > 0;
 
+  function submit() {
+    if (!valid) return;
+    Keyboard.dismiss();
+    logIn(email);
+  }
+
   return (
     <View style={styles.login}>
       <Text style={styles.loginText}>Log in to manage your bookings, credits and memberships.</Text>
@@ -187,9 +186,9 @@ function LoginCard() {
         secureTextEntry
         autoComplete="password"
         style={styles.input}
-        onSubmitEditing={() => valid && logIn(email)}
+        onSubmitEditing={submit}
       />
-      <Button label="Log in" disabled={!valid} onPress={() => logIn(email)} />
+      <Button label="Log in" disabled={!valid} onPress={submit} />
       <Text style={styles.demoNote}>Demo - any email and password will do.</Text>
     </View>
   );
