@@ -1,7 +1,7 @@
 import { router, useLocalSearchParams } from 'expo-router';
 import { useState } from 'react';
 import { Modal, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
-import Animated, { FadeIn, LinearTransition } from 'react-native-reanimated';
+import Animated, { FadeIn } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { Icon } from '@/components/icon';
@@ -14,7 +14,6 @@ import {
   dayKey,
   formatDay,
   formatMonth,
-  getInstructor,
   instructors,
   locations,
   scheduleStart,
@@ -25,55 +24,59 @@ import {
 } from '@/lib/schedule';
 import { colors, fonts, radius, TAB_BAR_SPACE } from '@/lib/theme';
 
-const TYPE_TABS = [{ id: 'all', label: 'All' }, ...classTypes.map((type) => ({ id: type.id, label: type.name }))];
-
-type FilterKind = 'instructor' | 'location';
+const TYPE_CHIPS = [
+  { id: 'all', label: 'All' },
+  ...classTypes.map((type) => ({ id: type.id, label: type.id === 'event' ? 'Events' : type.name })),
+];
 
 export default function BookScreen() {
   const insets = useSafeAreaInsets();
   const { type = 'all' } = useLocalSearchParams<{ type?: string }>();
+  const { now } = useNest();
+  const today = new Date(now);
+  const todayKey = dayKey(today);
+  const todayStart = new Date(today.getFullYear(), today.getMonth(), today.getDate()).getTime();
+
   const [week, setWeek] = useState(0);
-  const [selectedDay, setSelectedDay] = useState<string | null>(null);
+  const [selectedDay, setSelectedDay] = useState(todayKey);
   const [instructorId, setInstructorId] = useState<string | null>(null);
   const [location, setLocation] = useState<string | null>(null);
-  const [openFilter, setOpenFilter] = useState<FilterKind | null>(null);
+  const [filtersOpen, setFiltersOpen] = useState(false);
 
-  const { now: nowMs } = useNest();
-  const now = new Date(nowMs);
-  const todayKey = dayKey(now);
-  const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate());
   const weekStart = addDays(scheduleStart, week * 7);
   const days = Array.from({ length: 7 }, (_, i) => addDays(weekStart, i));
-  const weekKeys = days.map(dayKey);
+  const activeFilters = (instructorId ? 1 : 0) + (location ? 1 : 0);
 
-  const matchesFilters = (session: Session) =>
+  const bookable = (session: Session) =>
+    session.start.getTime() > now &&
     (type === 'all' || session.typeId === type) &&
     (!instructorId || session.instructorId === instructorId) &&
     (!location || session.location === location);
 
-  const visible = sessions.filter((session) => {
-    const key = dayKey(session.start);
-    if (!matchesFilters(session)) return false;
-    // "Show all" lists what is still bookable this week; a selected day also shows finished classes.
-    if (selectedDay) return key === selectedDay;
-    return weekKeys.includes(key) && session.start.getTime() > now.getTime();
-  });
-
-  const groups = weekKeys
-    .map((key, i) => ({ key, date: days[i], items: visible.filter((s) => dayKey(s.start) === key) }))
-    .filter((group) => group.items.length > 0);
-
-  const hasFilters = type !== 'all' || instructorId || location;
+  const daySessions = sessions.filter(
+    (session) => dayKey(session.start) === selectedDay && bookable(session)
+  );
+  const selectedDate = days.find((day) => dayKey(day) === selectedDay) ?? today;
 
   function changeWeek(delta: number) {
-    setWeek((current) => current + delta);
-    setSelectedDay(null);
+    const next = week + delta;
+    setWeek(next);
+    setSelectedDay(next === 0 ? todayKey : dayKey(addDays(scheduleStart, next * 7)));
   }
 
-  function resetFilters() {
-    router.setParams({ type: 'all' });
-    setInstructorId(null);
-    setLocation(null);
+  // Shown when the selected day is empty, so there is always a way forward.
+  const nextAvailable =
+    daySessions.length === 0
+      ? sessions.find(
+          (session) =>
+            session.start.getTime() >= addDays(selectedDate, 1).getTime() && bookable(session)
+        )
+      : undefined;
+
+  function showDay(date: Date) {
+    const weekIndex = Math.floor((date.getTime() - scheduleStart.getTime()) / (7 * 86_400_000));
+    setWeek(Math.min(weekIndex, scheduleWeeks - 1));
+    setSelectedDay(dayKey(date));
   }
 
   return (
@@ -82,142 +85,137 @@ export default function BookScreen() {
         contentContainerStyle={{ paddingTop: insets.top + 12, paddingBottom: insets.bottom + TAB_BAR_SPACE }}
         showsVerticalScrollIndicator={false}>
         <View style={styles.header}>
-          <Eyebrow>Classes & events</Eyebrow>
-          <Text style={styles.title}>Book</Text>
+          <View>
+            <Eyebrow>Classes & events</Eyebrow>
+            <Text style={styles.title}>Book</Text>
+          </View>
+          <Pressable
+            accessibilityLabel="Filter"
+            onPress={() => setFiltersOpen(true)}
+            style={[styles.filterButton, activeFilters > 0 && styles.filterButtonActive]}>
+            <Icon name="sliders" size={20} color={activeFilters > 0 ? colors.onDark : colors.ink} />
+            {activeFilters > 0 && (
+              <View style={styles.badge}>
+                <Text style={styles.badgeText}>{activeFilters}</Text>
+              </View>
+            )}
+          </Pressable>
         </View>
 
-        <View style={styles.monthRow}>
-          <Text style={styles.month}>{formatMonth(weekStart)}</Text>
-          <View style={styles.monthNav}>
-            <Pressable
-              onPress={() => {
-                setWeek(0);
-                setSelectedDay(todayKey);
-              }}
-              style={[styles.todayButton, selectedDay === todayKey && styles.todayButtonActive]}>
-              <Text style={[styles.todayText, selectedDay === todayKey && styles.todayTextActive]}>
-                Today
-              </Text>
-            </Pressable>
-            <RoundIconButton
-              icon="chevronLeft"
-              label="Previous week"
-              disabled={week === 0}
-              onPress={() => changeWeek(-1)}
-            />
-            <RoundIconButton
-              icon="chevronRight"
-              label="Next week"
-              disabled={week === scheduleWeeks - 1}
-              onPress={() => changeWeek(1)}
-            />
+        <View style={styles.calendar}>
+          <View style={styles.monthRow}>
+            <Text style={styles.month}>{formatMonth(weekStart)}</Text>
+            <View style={styles.monthNav}>
+              <ArrowButton
+                icon="chevronLeft"
+                label="Previous week"
+                disabled={week === 0}
+                onPress={() => changeWeek(-1)}
+              />
+              <ArrowButton
+                icon="chevronRight"
+                label="Next week"
+                disabled={week === scheduleWeeks - 1}
+                onPress={() => changeWeek(1)}
+              />
+            </View>
+          </View>
+
+          <View style={styles.dayStrip}>
+            {days.map((day) => {
+              const key = dayKey(day);
+              const selected = key === selectedDay;
+              const past = day.getTime() < todayStart;
+              const hasClasses = sessions.some((s) => dayKey(s.start) === key && bookable(s));
+              return (
+                <Pressable
+                  key={key}
+                  disabled={past}
+                  onPress={() => setSelectedDay(key)}
+                  style={[styles.day, selected && styles.daySelected, past && styles.dayPast]}>
+                  <Text style={[styles.dayName, selected && styles.dayTextSelected]}>
+                    {weekdayShort(day).slice(0, 2)}
+                  </Text>
+                  <Text
+                    style={[
+                      styles.dayNumber,
+                      key === todayKey && styles.dayToday,
+                      selected && styles.dayTextSelected,
+                    ]}>
+                    {day.getDate()}
+                  </Text>
+                  <View
+                    style={[
+                      styles.dot,
+                      hasClasses && !past && { backgroundColor: selected ? colors.onDark : colors.lineStrong },
+                    ]}
+                  />
+                </Pressable>
+              );
+            })}
           </View>
         </View>
 
-        <View style={styles.dayStrip}>
-          {days.map((day) => {
-            const key = dayKey(day);
-            const selected = key === selectedDay;
-            const isToday = key === todayKey;
-            const isPast = day.getTime() < todayStart.getTime();
+        <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.chips}>
+          {TYPE_CHIPS.map((chip) => {
+            const active = chip.id === type;
             return (
               <Pressable
-                key={key}
-                onPress={() => setSelectedDay(selected ? null : key)}
-                style={[styles.day, selected && styles.daySelected]}>
-                <Text style={[styles.dayName, selected && styles.dayTextSelected, isPast && styles.dayPast]}>
-                  {weekdayShort(day)}
-                </Text>
-                <Text style={[styles.dayNumber, selected && styles.dayTextSelected, isPast && styles.dayPast]}>
-                  {day.getDate()}
-                </Text>
-                <View style={[styles.todayDot, isToday && { backgroundColor: selected ? colors.onDark : colors.bronze }]} />
-              </Pressable>
-            );
-          })}
-        </View>
-
-        <View style={styles.toolbar}>
-          <FilterChip label="Show all" active={!selectedDay} onPress={() => setSelectedDay(null)} />
-          <FilterChip
-            label={instructorId ? getInstructor(instructorId).name.split(' ')[0] : 'Instructor'}
-            active={!!instructorId}
-            dropdown
-            onPress={() => setOpenFilter('instructor')}
-          />
-          <FilterChip
-            label={location ?? 'Location'}
-            active={!!location}
-            dropdown
-            onPress={() => setOpenFilter('location')}
-          />
-        </View>
-
-        <ScrollView
-          horizontal
-          showsHorizontalScrollIndicator={false}
-          contentContainerStyle={styles.tabs}>
-          {TYPE_TABS.map((tab) => {
-            const active = tab.id === type;
-            return (
-              <Pressable key={tab.id} onPress={() => router.setParams({ type: tab.id })} style={styles.tab}>
-                <Text style={[styles.tabText, active && styles.tabTextActive]}>{tab.label}</Text>
-                <View style={[styles.tabLine, active && styles.tabLineActive]} />
+                key={chip.id}
+                onPress={() => router.setParams({ type: chip.id })}
+                style={[styles.chip, active && styles.chipActive]}>
+                <Text style={[styles.chipText, active && styles.chipTextActive]}>{chip.label}</Text>
               </Pressable>
             );
           })}
         </ScrollView>
 
-        <View style={styles.list}>
-          {groups.map((group) => (
-            <Animated.View key={group.key} layout={LinearTransition} entering={FadeIn.duration(300)}>
-              <View style={styles.groupHeader}>
-                <Text style={styles.groupTitle}>
-                  {group.key === todayKey ? 'Today · ' : ''}
-                  {formatDay(group.date)}
-                </Text>
-                <Text style={styles.groupCount}>
-                  {group.items.length} {group.items.length === 1 ? 'class' : 'classes'}
-                </Text>
-              </View>
-              <View style={styles.cards}>
-                {group.items.map((session) => (
-                  <SessionCard key={session.id} session={session} />
-                ))}
-              </View>
-            </Animated.View>
+        <View style={styles.dayHeader}>
+          <Text style={styles.dayTitle}>
+            {selectedDay === todayKey ? 'Today' : formatDay(selectedDate).split(',')[0]}
+          </Text>
+          <Text style={styles.dayDate}>{formatDay(selectedDate).split(', ')[1]}</Text>
+        </View>
+
+        <Animated.View key={`${selectedDay}-${type}-${instructorId}-${location}`} entering={FadeIn.duration(250)} style={styles.list}>
+          {daySessions.map((session) => (
+            <SessionCard key={session.id} session={session} />
           ))}
 
-          {groups.length === 0 && (
+          {daySessions.length === 0 && (
             <View style={styles.empty}>
-              <Icon name="calendar" size={36} color={colors.lineStrong} strokeWidth={1.2} />
-              <Text style={styles.emptyTitle}>No classes here</Text>
+              <Text style={styles.emptyTitle}>No classes left</Text>
               <Text style={styles.emptyText}>
-                {hasFilters
-                  ? `Nothing matches your filters ${selectedDay ? 'on this day' : 'this week'}. Try another day or reset the filters.`
-                  : `There is nothing left to book ${selectedDay ? 'on this day' : 'this week'}. Have a look at the next week.`}
+                {activeFilters > 0 || type !== 'all'
+                  ? 'Nothing matches your selection on this day.'
+                  : 'There is nothing left to book on this day.'}
               </Text>
-              {hasFilters && <Button label="Reset filters" variant="outline" size="sm" onPress={resetFilters} />}
+              {nextAvailable && (
+                <Button
+                  label={`Show ${formatDay(nextAvailable.start).split(',')[0]}`}
+                  variant="outline"
+                  size="sm"
+                  onPress={() => showDay(nextAvailable.start)}
+                />
+              )}
             </View>
           )}
-        </View>
+        </Animated.View>
       </ScrollView>
 
       <FilterSheet
-        kind={openFilter}
-        value={openFilter === 'instructor' ? instructorId : location}
-        onClose={() => setOpenFilter(null)}
-        onSelect={(value) => {
-          if (openFilter === 'instructor') setInstructorId(value);
-          else setLocation(value);
-          setOpenFilter(null);
-        }}
+        visible={filtersOpen}
+        instructorId={instructorId}
+        location={location}
+        onInstructor={setInstructorId}
+        onLocation={setLocation}
+        onClose={() => setFiltersOpen(false)}
       />
     </View>
   );
 }
 
-function RoundIconButton({
+function ArrowButton({
   icon,
   label,
   disabled,
@@ -232,74 +230,79 @@ function RoundIconButton({
     <Pressable
       accessibilityLabel={label}
       disabled={disabled}
+      hitSlop={6}
       onPress={onPress}
-      style={({ pressed }) => [styles.roundButton, (disabled || pressed) && { opacity: disabled ? 0.3 : 0.6 }]}>
+      style={({ pressed }) => [styles.arrow, (disabled || pressed) && { opacity: disabled ? 0.25 : 0.6 }]}>
       <Icon name={icon} size={16} />
     </Pressable>
   );
 }
 
-function FilterChip({
-  label,
-  active,
-  dropdown,
-  onPress,
-}: {
-  label: string;
-  active: boolean;
-  dropdown?: boolean;
-  onPress: () => void;
-}) {
-  return (
-    <Pressable onPress={onPress} style={[styles.chip, active && styles.chipActive]}>
-      <Text style={[styles.chipText, active && styles.chipTextActive]} numberOfLines={1}>
-        {label}
-      </Text>
-      {dropdown && (
-        <Icon name="chevronDown" size={12} color={active ? colors.onDark : colors.inkSoft} strokeWidth={1.8} />
-      )}
-    </Pressable>
-  );
-}
-
 function FilterSheet({
-  kind,
-  value,
+  visible,
+  instructorId,
+  location,
+  onInstructor,
+  onLocation,
   onClose,
-  onSelect,
 }: {
-  kind: FilterKind | null;
-  value: string | null;
+  visible: boolean;
+  instructorId: string | null;
+  location: string | null;
+  onInstructor: (id: string | null) => void;
+  onLocation: (location: string | null) => void;
   onClose: () => void;
-  onSelect: (value: string | null) => void;
 }) {
   const insets = useSafeAreaInsets();
-  const options =
-    kind === 'instructor'
-      ? [
-          { value: null, label: 'All instructors' },
-          ...instructors.map((i) => ({ value: i.id, label: i.name })),
-        ]
-      : [{ value: null, label: 'All locations' }, ...locations.map((l) => ({ value: l, label: l }))];
 
   return (
-    <Modal visible={kind !== null} transparent animationType="fade" onRequestClose={onClose}>
+    <Modal visible={visible} transparent animationType="fade" onRequestClose={onClose}>
       <Pressable style={styles.backdrop} onPress={onClose} />
-      <View style={[styles.sheet, { paddingBottom: insets.bottom + 16 }]}>
-        <View style={styles.sheetGrabber} />
-        <Text style={styles.sheetTitle}>{kind === 'instructor' ? 'Instructors' : 'Locations'}</Text>
-        {options.map((option) => {
-          const selected = option.value === value;
-          return (
-            <Pressable
-              key={option.label}
-              onPress={() => onSelect(option.value)}
-              style={({ pressed }) => [styles.option, pressed && { backgroundColor: colors.sand }]}>
-              <Text style={[styles.optionText, selected && styles.optionTextSelected]}>{option.label}</Text>
-              {selected && <Icon name="check" size={18} color={colors.bronze} strokeWidth={2} />}
-            </Pressable>
-          );
-        })}
+      <View style={[styles.sheet, { paddingBottom: insets.bottom + 20 }]}>
+        <View style={styles.grabber} />
+        <Text style={styles.sheetTitle}>Filter</Text>
+
+        <Text style={styles.sheetLabel}>Instructor</Text>
+        <View style={styles.options}>
+          {instructors.map((instructor) => {
+            const selected = instructor.id === instructorId;
+            return (
+              <Pressable
+                key={instructor.id}
+                onPress={() => onInstructor(selected ? null : instructor.id)}
+                style={[styles.chip, selected && styles.chipActive]}>
+                <Text style={[styles.chipText, selected && styles.chipTextActive]}>{instructor.name}</Text>
+              </Pressable>
+            );
+          })}
+        </View>
+
+        <Text style={styles.sheetLabel}>Location</Text>
+        <View style={styles.options}>
+          {locations.map((name) => {
+            const selected = name === location;
+            return (
+              <Pressable
+                key={name}
+                onPress={() => onLocation(selected ? null : name)}
+                style={[styles.chip, selected && styles.chipActive]}>
+                <Text style={[styles.chipText, selected && styles.chipTextActive]}>{name}</Text>
+              </Pressable>
+            );
+          })}
+        </View>
+
+        <View style={styles.sheetButtons}>
+          <Button
+            label="Reset"
+            variant="outline"
+            onPress={() => {
+              onInstructor(null);
+              onLocation(null);
+            }}
+          />
+          <Button label="Show classes" onPress={onClose} style={styles.flex} />
+        </View>
       </View>
     </Modal>
   );
@@ -310,8 +313,14 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: colors.background,
   },
+  flex: {
+    flex: 1,
+  },
   header: {
     paddingHorizontal: 24,
+    flexDirection: 'row',
+    alignItems: 'flex-end',
+    justifyContent: 'space-between',
   },
   title: {
     fontFamily: fonts.light,
@@ -319,78 +328,89 @@ const styles = StyleSheet.create({
     color: colors.ink,
     marginTop: 6,
   },
-  monthRow: {
+  filterButton: {
+    width: 48,
+    height: 48,
+    borderRadius: 24,
+    backgroundColor: colors.surface,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: 4,
+  },
+  filterButtonActive: {
+    backgroundColor: colors.ink,
+  },
+  badge: {
+    position: 'absolute',
+    top: 4,
+    right: 4,
+    minWidth: 16,
+    height: 16,
+    borderRadius: 8,
+    backgroundColor: colors.bronze,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  badgeText: {
+    fontFamily: fonts.semibold,
+    fontSize: 10,
+    color: colors.onDark,
+  },
+  calendar: {
     marginTop: 20,
-    paddingHorizontal: 24,
+    marginHorizontal: 16,
+    padding: 16,
+    paddingBottom: 12,
+    borderRadius: radius.lg,
+    backgroundColor: colors.surface,
+  },
+  monthRow: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
+    paddingHorizontal: 4,
   },
   month: {
     fontFamily: fonts.medium,
-    fontSize: 13,
-    letterSpacing: 2.4,
+    fontSize: 12,
+    letterSpacing: 2.2,
     textTransform: 'uppercase',
     color: colors.ink,
   },
   monthNav: {
     flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
+    gap: 4,
   },
-  todayButton: {
-    height: 36,
-    paddingHorizontal: 14,
-    borderRadius: radius.pill,
-    borderWidth: StyleSheet.hairlineWidth,
-    borderColor: colors.lineStrong,
-    backgroundColor: colors.surface,
-    justifyContent: 'center',
-  },
-  todayButtonActive: {
-    backgroundColor: colors.ink,
-    borderColor: colors.ink,
-  },
-  todayText: {
-    fontFamily: fonts.medium,
-    fontSize: 10.5,
-    letterSpacing: 1.4,
-    textTransform: 'uppercase',
-    color: colors.inkSoft,
-  },
-  todayTextActive: {
-    color: colors.onDark,
-  },
-  roundButton: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
-    borderWidth: StyleSheet.hairlineWidth,
-    borderColor: colors.lineStrong,
-    backgroundColor: colors.surface,
+  arrow: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
     alignItems: 'center',
     justifyContent: 'center',
   },
   dayStrip: {
-    marginTop: 16,
-    paddingHorizontal: 16,
+    marginTop: 12,
     flexDirection: 'row',
     gap: 4,
   },
   day: {
     flex: 1,
     alignItems: 'center',
-    paddingVertical: 12,
+    paddingVertical: 10,
     borderRadius: radius.md,
-    gap: 6,
+    gap: 4,
   },
   daySelected: {
     backgroundColor: colors.ink,
   },
+  dayPast: {
+    opacity: 0.3,
+  },
   dayName: {
     fontFamily: fonts.medium,
     fontSize: 10,
-    letterSpacing: 1.2,
+    letterSpacing: 1,
+    textTransform: 'uppercase',
     color: colors.muted,
   },
   dayNumber: {
@@ -399,34 +419,30 @@ const styles = StyleSheet.create({
     color: colors.ink,
     fontVariant: ['tabular-nums'],
   },
+  dayToday: {
+    color: colors.bronze,
+  },
   dayTextSelected: {
     color: colors.onDark,
   },
-  dayPast: {
-    opacity: 0.4,
-  },
-  todayDot: {
+  dot: {
     width: 4,
     height: 4,
     borderRadius: 2,
   },
-  toolbar: {
+  chips: {
     marginTop: 16,
     paddingHorizontal: 16,
-    flexDirection: 'row',
-    flexWrap: 'wrap',
     gap: 8,
   },
   chip: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 4,
-    paddingHorizontal: 12,
-    height: 36,
+    height: 38,
+    paddingHorizontal: 16,
     borderRadius: radius.pill,
-    borderWidth: StyleSheet.hairlineWidth,
-    borderColor: colors.lineStrong,
-    backgroundColor: colors.surface,
+    borderWidth: 1,
+    borderColor: colors.line,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   chipActive: {
     backgroundColor: colors.ink,
@@ -434,83 +450,53 @@ const styles = StyleSheet.create({
   },
   chipText: {
     fontFamily: fonts.medium,
-    fontSize: 12,
+    fontSize: 13,
     color: colors.inkSoft,
   },
   chipTextActive: {
     color: colors.onDark,
   },
-  tabs: {
-    marginTop: 20,
+  dayHeader: {
+    marginTop: 28,
+    marginBottom: 14,
     paddingHorizontal: 24,
-    gap: 22,
-  },
-  tab: {
-    paddingTop: 4,
-  },
-  tabText: {
-    fontFamily: fonts.medium,
-    fontSize: 11.5,
-    letterSpacing: 1.8,
-    textTransform: 'uppercase',
-    color: colors.muted,
-  },
-  tabTextActive: {
-    color: colors.ink,
-  },
-  tabLine: {
-    height: 2,
-    marginTop: 8,
-    borderRadius: 1,
-  },
-  tabLineActive: {
-    backgroundColor: colors.ink,
-  },
-  list: {
-    marginTop: 8,
-    paddingHorizontal: 16,
-  },
-  groupHeader: {
     flexDirection: 'row',
     alignItems: 'baseline',
-    justifyContent: 'space-between',
-    paddingHorizontal: 8,
-    paddingTop: 24,
-    paddingBottom: 12,
+    gap: 10,
   },
-  groupTitle: {
-    fontFamily: fonts.medium,
-    fontSize: 12,
-    letterSpacing: 1.6,
-    textTransform: 'uppercase',
+  dayTitle: {
+    fontFamily: fonts.light,
+    fontSize: 22,
     color: colors.ink,
   },
-  groupCount: {
+  dayDate: {
     fontFamily: fonts.regular,
-    fontSize: 12,
+    fontSize: 13,
     color: colors.muted,
   },
-  cards: {
+  list: {
+    paddingHorizontal: 16,
     gap: 10,
   },
   empty: {
     alignItems: 'center',
-    paddingVertical: 56,
+    gap: 8,
+    paddingVertical: 40,
     paddingHorizontal: 24,
-    gap: 12,
+    borderRadius: radius.lg,
+    backgroundColor: colors.surface,
   },
   emptyTitle: {
     fontFamily: fonts.light,
-    fontSize: 22,
+    fontSize: 20,
     color: colors.ink,
   },
   emptyText: {
     fontFamily: fonts.regular,
     fontSize: 14,
-    lineHeight: 22,
     color: colors.muted,
     textAlign: 'center',
-    marginBottom: 8,
+    marginBottom: 12,
   },
   backdrop: {
     position: 'absolute',
@@ -528,10 +514,10 @@ const styles = StyleSheet.create({
     backgroundColor: colors.surface,
     borderTopLeftRadius: radius.lg,
     borderTopRightRadius: radius.lg,
-    paddingHorizontal: 16,
+    paddingHorizontal: 20,
     paddingTop: 10,
   },
-  sheetGrabber: {
+  grabber: {
     alignSelf: 'center',
     width: 36,
     height: 5,
@@ -540,28 +526,27 @@ const styles = StyleSheet.create({
     marginBottom: 16,
   },
   sheetTitle: {
-    fontFamily: fonts.medium,
-    fontSize: 12,
-    letterSpacing: 2.4,
-    textTransform: 'uppercase',
-    color: colors.muted,
-    paddingHorizontal: 12,
-    marginBottom: 8,
-  },
-  option: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingHorizontal: 12,
-    paddingVertical: 16,
-    borderRadius: radius.sm,
-  },
-  optionText: {
-    fontFamily: fonts.regular,
-    fontSize: 16,
+    fontFamily: fonts.light,
+    fontSize: 24,
     color: colors.ink,
   },
-  optionTextSelected: {
+  sheetLabel: {
     fontFamily: fonts.medium,
+    fontSize: 11,
+    letterSpacing: 2,
+    textTransform: 'uppercase',
+    color: colors.muted,
+    marginTop: 22,
+    marginBottom: 10,
+  },
+  options: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 8,
+  },
+  sheetButtons: {
+    flexDirection: 'row',
+    gap: 10,
+    marginTop: 28,
   },
 });

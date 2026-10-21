@@ -1,7 +1,7 @@
 import { router } from 'expo-router';
 import * as WebBrowser from 'expo-web-browser';
 import { useState } from 'react';
-import { Alert, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
+import { Alert, Pressable, ScrollView, StyleSheet, Switch, Text, TextInput, View } from 'react-native';
 import Animated, { FadeIn, FadeOut, LinearTransition } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Svg, { Circle } from 'react-native-svg';
@@ -19,6 +19,7 @@ const MEMBERSHIP_CREDITS = 10;
 export default function ProfileScreen() {
   const insets = useSafeAreaInsets();
   const { user, bookedIds, logOut, now } = useNest();
+  const [newsletter, setNewsletter] = useState(false);
 
   const bookings = bookedIds
     .map(getSession)
@@ -32,6 +33,11 @@ export default function ProfileScreen() {
           { icon: 'card' as const, label: 'Payment methods', onPress: comingSoon },
         ]
       : []),
+    {
+      icon: 'rings',
+      label: 'About The Wellnest',
+      onPress: () => WebBrowser.openBrowserAsync(`${WEBSITE}/home1`),
+    },
     {
       icon: 'document',
       label: 'Legal Terms',
@@ -90,13 +96,13 @@ export default function ProfileScreen() {
           </View>
         ) : (
           <View style={styles.list}>
-            {bookings.map((session) => (
+            {bookings.map((session, index) => (
               <Animated.View
                 key={session.id}
                 entering={FadeIn}
                 exiting={FadeOut}
                 layout={LinearTransition}>
-                <BookingRow session={session} />
+                <BookingRow session={session} last={index === bookings.length - 1} />
               </Animated.View>
             ))}
           </View>
@@ -106,6 +112,17 @@ export default function ProfileScreen() {
       <View style={styles.section}>
         <Text style={styles.sectionTitle}>Settings</Text>
         <View style={styles.list}>
+          <View style={styles.settingRow}>
+            <Icon name="mail" size={20} color={colors.inkSoft} />
+            <Text style={styles.settingText}>Newsletter</Text>
+            <Switch
+              value={newsletter}
+              onValueChange={setNewsletter}
+              trackColor={{ true: colors.olive, false: colors.line }}
+              thumbColor={colors.surface}
+              ios_backgroundColor={colors.line}
+            />
+          </View>
           {settings.map((item, index) => (
             <Pressable
               key={item.label}
@@ -165,11 +182,11 @@ function LoginCard() {
   );
 }
 
-function BookingRow({ session }: { session: Session }) {
+function BookingRow({ session, last }: { session: Session; last: boolean }) {
   return (
     <Pressable
       onPress={() => openSession(session.id)}
-      style={({ pressed }) => [styles.bookingRow, pressed && { opacity: 0.6 }]}>
+      style={({ pressed }) => [styles.bookingRow, last && styles.lastRow, pressed && { opacity: 0.6 }]}>
       <View style={styles.dateBlock}>
         <Text style={styles.dateDay}>{session.start.getDate()}</Text>
         <Text style={styles.dateWeekday}>{weekdayShort(session.start)}</Text>
@@ -246,8 +263,6 @@ const styles = StyleSheet.create({
     marginHorizontal: 16,
     borderRadius: radius.lg,
     backgroundColor: colors.surface,
-    borderWidth: StyleSheet.hairlineWidth,
-    borderColor: colors.lineStrong,
     padding: 24,
     gap: 12,
   },
@@ -293,9 +308,7 @@ const styles = StyleSheet.create({
     gap: 12,
     paddingVertical: 32,
     borderRadius: radius.md,
-    borderWidth: StyleSheet.hairlineWidth,
-    borderStyle: 'dashed',
-    borderColor: colors.lineStrong,
+    backgroundColor: colors.surface,
   },
   emptyText: {
     fontFamily: fonts.regular,
@@ -306,8 +319,6 @@ const styles = StyleSheet.create({
   list: {
     borderRadius: radius.md,
     backgroundColor: colors.surface,
-    borderWidth: StyleSheet.hairlineWidth,
-    borderColor: colors.lineStrong,
     paddingHorizontal: 16,
   },
   bookingRow: {

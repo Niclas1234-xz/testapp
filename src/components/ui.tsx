@@ -68,14 +68,6 @@ export function Avatar({ name, size = 40, tint = colors.sand }: { name: string; 
   );
 }
 
-export function Pill({ children, color = colors.bronze }: { children: ReactNode; color?: string }) {
-  return (
-    <View style={[styles.pill, { borderColor: color }]}>
-      <Text style={[styles.pillText, { color }]}>{children}</Text>
-    </View>
-  );
-}
-
 const styles = StyleSheet.create({
   button: {
     height: 52,
@@ -116,18 +108,5 @@ const styles = StyleSheet.create({
     fontFamily: fonts.medium,
     color: colors.inkSoft,
     letterSpacing: 1,
-  },
-  pill: {
-    alignSelf: 'center',
-    borderWidth: 1,
-    borderRadius: radius.pill,
-    paddingHorizontal: 14,
-    paddingVertical: 5,
-  },
-  pillText: {
-    fontFamily: fonts.medium,
-    fontSize: 10,
-    letterSpacing: 2,
-    textTransform: 'uppercase',
   },
 });

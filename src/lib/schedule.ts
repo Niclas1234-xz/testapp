@@ -210,6 +210,15 @@ export function formatTime(date: Date) {
   return `${String(date.getHours()).padStart(2, '0')}:${String(date.getMinutes()).padStart(2, '0')}`;
 }
 
+// "Today", "Tomorrow" or e.g. "Thu 22".
+export function relativeDay(date: Date, now: number) {
+  const today = new Date(now);
+  if (dayKey(date) === dayKey(today)) return 'Today';
+  if (dayKey(date) === dayKey(addDays(today, 1))) return 'Tomorrow';
+  const weekday = WEEKDAYS[date.getDay()].slice(0, 3);
+  return `${weekday} ${date.getDate()}`;
+}
+
 export function endTime(session: Session) {
   return new Date(session.start.getTime() + session.durationMin * 60_000);
 }

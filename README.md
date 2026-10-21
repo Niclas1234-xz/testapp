@@ -8,10 +8,10 @@ Buchungen und Login funktionieren nur lokal in der App und gehen beim Neuladen v
 
 | Tab | Datei | Inhalt |
 | --- | --- | --- |
-| Home | `src/app/(tabs)/index.tsx` | Hero, Laufband „THE NOW · THE NATURE …", nächste Kurse, About, Presence/Ease/Connection, Kurse, Newsletter |
-| Book | `src/app/(tabs)/book.tsx` | Woche wählen, Tagesleiste, „Show all"/„Today", Filter nach Instructor und Location, Kursart-Tabs, Kurskarten |
-| Classes | `src/app/(tabs)/classes.tsx` | Signature Class (Sculpt), Classic Pilates, Yoga mit Beschreibung und „Book now" |
-| Nest | `src/app/(tabs)/profile.tsx` | Demo-Login, Mitgliedskarte mit Credits, „My bookings", Einstellungen |
+| Home | `src/app/(tabs)/index.tsx` | Hero mit „Book a class", deine nächste Buchung, die nächsten drei Kurse, Kursarten |
+| Book | `src/app/(tabs)/book.tsx` | Woche und Tag wählen, Kursart-Chips, Filter (Instructor, Location) im Sheet, Kursliste |
+| Classes | `src/app/(tabs)/classes.tsx` | Signature Class (Sculpt), Classic Pilates, Yoga mit Beschreibung und „See times" |
+| Nest | `src/app/(tabs)/profile.tsx` | Demo-Login, Mitgliedskarte mit Credits, „My bookings", Newsletter, Einstellungen |
 
 Dazu zwei Sheets: `src/app/session/[id].tsx` (Kursdetails, buchen, stornieren, Warteliste) und
 `src/app/instructor/[id].tsx` (Bio und nächste Kurse der Trainerin oder des Trainers).
@@ -19,7 +19,7 @@ Dazu zwei Sheets: `src/app/session/[id].tsx` (Kursdetails, buchen, stornieren, W
 - `src/lib/schedule.ts`: Kursarten, Instructors, Standorte und der generierte Stundenplan (4 Wochen ab heute)
 - `src/lib/nest-store.tsx`: Buchungen und Login (nur im Speicher)
 - `src/lib/theme.ts`: Farben und Schriften
-- `src/components/`: Icons (SVG-Linien wie auf der Webseite), Buttons, Kurskarte, Laufband
+- `src/components/`: Icons (SVG-Linien wie auf der Webseite), Buttons, Kurskarte
 
 ## Starten
 

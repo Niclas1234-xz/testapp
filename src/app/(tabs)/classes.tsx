@@ -5,7 +5,7 @@ import Animated, { FadeIn, FadeInDown, LinearTransition } from 'react-native-rea
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { Icon } from '@/components/icon';
-import { Button, Eyebrow, Pill } from '@/components/ui';
+import { Button, Eyebrow } from '@/components/ui';
 import { classTypes, type ClassType } from '@/lib/schedule';
 import { colors, fonts, radius, TAB_BAR_SPACE } from '@/lib/theme';
 
@@ -22,8 +22,7 @@ export default function ClassesScreen() {
         <Eyebrow>Classes</Eyebrow>
         <Text style={styles.title}>Three ways{'\n'}to move</Text>
         <Text style={styles.intro}>
-          Every practice follows the same full-body sequence of strength, cardio, mobility, and
-          breath. What changes is the music, energy, atmosphere, and experience.
+          The same full-body sequence every time. What changes is the music - and with it, the energy.
         </Text>
       </View>
 
@@ -46,49 +45,53 @@ function ClassCard({ type, initiallyOpen }: { type: ClassType; initiallyOpen: bo
 
   return (
     <Animated.View layout={LinearTransition.duration(250)} style={styles.card}>
-      <View style={styles.cardIcon}>
-        <Icon name={type.icon} size={54} color={colors.ink} strokeWidth={0.8} />
+      <View style={styles.cardHeader}>
+        <View style={styles.iconCircle}>
+          <Icon name={type.icon} size={30} color={type.color} strokeWidth={1.1} />
+        </View>
+        <View style={styles.flex}>
+          <Text style={styles.cardLabel}>{type.label}</Text>
+          <Text style={styles.cardName}>{type.name} · 50 min</Text>
+        </View>
       </View>
-      <Text style={styles.cardLabel}>{type.label}</Text>
-      <Text style={styles.cardName}>{type.name}</Text>
-      <View style={styles.rule} />
+
+      <Text style={styles.tagline}>{type.tagline}</Text>
 
       <View style={styles.features}>
         {type.features.map((feature) => (
           <View key={feature.label} style={styles.feature}>
-            <Icon name={feature.icon} size={22} color={colors.inkSoft} strokeWidth={1.1} />
+            <Icon name={feature.icon} size={15} color={colors.inkSoft} strokeWidth={1.3} />
             <Text style={styles.featureText}>{feature.label}</Text>
           </View>
         ))}
       </View>
 
-      <Pill>50 min</Pill>
-
       {open && (
         <Animated.View entering={FadeIn.duration(300)} style={styles.more}>
-          <Text style={styles.tagline}>{type.tagline}</Text>
           {type.description.map((paragraph) => (
             <Text key={paragraph} style={styles.paragraph}>
               {paragraph}
             </Text>
           ))}
           <Text style={styles.expectTitle}>Expect</Text>
-          <Text style={styles.expect}>{type.expect.join(' · ')}</Text>
+          <Text style={styles.paragraph}>{type.expect.join(' · ')}</Text>
         </Animated.View>
       )}
 
-      <Button
-        label="Book now"
-        icon="arrowRight"
-        onPress={() => router.navigate({ pathname: '/book', params: { type: type.id } })}
-        style={styles.cardButton}
-      />
-      <Pressable hitSlop={8} onPress={() => setOpen(!open)} style={styles.toggle}>
-        <Text style={styles.toggleText}>{open ? 'Show less' : 'Read more'}</Text>
-        <View style={{ transform: [{ rotate: open ? '180deg' : '0deg' }] }}>
-          <Icon name="chevronDown" size={12} color={colors.bronze} strokeWidth={1.8} />
-        </View>
-      </Pressable>
+      <View style={styles.cardFooter}>
+        <Pressable hitSlop={10} onPress={() => setOpen(!open)} style={styles.toggle}>
+          <Text style={styles.toggleText}>{open ? 'Less' : 'More'}</Text>
+          <View style={{ transform: [{ rotate: open ? '180deg' : '0deg' }] }}>
+            <Icon name="chevronDown" size={12} color={colors.bronze} strokeWidth={1.8} />
+          </View>
+        </Pressable>
+        <Button
+          label="See times"
+          size="sm"
+          icon="arrowRight"
+          onPress={() => router.navigate({ pathname: '/book', params: { type: type.id } })}
+        />
+      </View>
     </Animated.View>
   );
 }
@@ -97,6 +100,9 @@ const styles = StyleSheet.create({
   screen: {
     flex: 1,
     backgroundColor: colors.background,
+  },
+  flex: {
+    flex: 1,
   },
   header: {
     paddingHorizontal: 24,
@@ -113,78 +119,80 @@ const styles = StyleSheet.create({
     fontSize: 15,
     lineHeight: 24,
     color: colors.inkSoft,
-    marginTop: 14,
+    marginTop: 12,
   },
   cards: {
     marginTop: 28,
     paddingHorizontal: 16,
-    gap: 16,
+    gap: 12,
   },
   card: {
     backgroundColor: colors.surface,
     borderRadius: radius.lg,
-    borderWidth: 1,
-    borderColor: colors.lineStrong,
-    paddingHorizontal: 24,
-    paddingTop: 32,
-    paddingBottom: 20,
+    padding: 20,
     overflow: 'hidden',
   },
-  cardIcon: {
-    alignSelf: 'center',
+  cardHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 16,
+  },
+  iconCircle: {
+    width: 60,
+    height: 60,
+    borderRadius: 30,
+    backgroundColor: colors.background,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   cardLabel: {
     fontFamily: fonts.regular,
-    fontSize: 19,
-    letterSpacing: 5,
+    fontSize: 14,
+    letterSpacing: 3.5,
     textTransform: 'uppercase',
     color: colors.ink,
-    textAlign: 'center',
-    marginTop: 18,
   },
   cardName: {
     fontFamily: fonts.regular,
-    fontSize: 12,
+    fontSize: 13,
     color: colors.muted,
-    textAlign: 'center',
-    marginTop: 6,
+    marginTop: 4,
   },
-  rule: {
-    height: StyleSheet.hairlineWidth,
-    backgroundColor: colors.lineStrong,
-    marginVertical: 22,
+  tagline: {
+    fontFamily: fonts.regular,
+    fontSize: 14,
+    lineHeight: 22,
+    color: colors.inkSoft,
+    marginTop: 16,
   },
   features: {
-    gap: 18,
-    marginBottom: 24,
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 8,
+    marginTop: 16,
   },
   feature: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 22,
-    paddingHorizontal: 4,
+    gap: 6,
+    paddingHorizontal: 12,
+    paddingVertical: 7,
+    borderRadius: radius.pill,
+    backgroundColor: colors.background,
   },
   featureText: {
     fontFamily: fonts.regular,
-    fontSize: 11.5,
-    letterSpacing: 2,
-    textTransform: 'uppercase',
+    fontSize: 12,
     color: colors.inkSoft,
   },
   more: {
-    marginTop: 24,
-    gap: 12,
-  },
-  tagline: {
-    fontFamily: fonts.medium,
-    fontSize: 16,
-    lineHeight: 25,
-    color: colors.ink,
+    marginTop: 18,
+    gap: 10,
   },
   paragraph: {
     fontFamily: fonts.regular,
     fontSize: 14,
-    lineHeight: 23,
+    lineHeight: 22,
     color: colors.inkSoft,
   },
   expectTitle: {
@@ -195,22 +203,17 @@ const styles = StyleSheet.create({
     color: colors.bronze,
     marginTop: 4,
   },
-  expect: {
-    fontFamily: fonts.regular,
-    fontSize: 14,
-    lineHeight: 22,
-    color: colors.inkSoft,
-  },
-  cardButton: {
-    marginTop: 24,
+  cardFooter: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginTop: 20,
   },
   toggle: {
-    alignSelf: 'center',
     flexDirection: 'row',
     alignItems: 'center',
     gap: 6,
-    marginTop: 16,
-    paddingVertical: 4,
+    paddingVertical: 6,
   },
   toggleText: {
     fontFamily: fonts.medium,

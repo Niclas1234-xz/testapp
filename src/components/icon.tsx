@@ -99,6 +99,13 @@ const glyphs = {
   ),
   document: <Path d="M6 3h8l4 4v14H6zM14 3v4h4M9 12h6M9 16h6" />,
   logout: <Path d="M14 4h5v16h-5M10 8l-4 4 4 4M6 12h9" />,
+  sliders: (
+    <>
+      <Path d="M4 7h9M17 7h3M4 17h3M11 17h9" />
+      <Circle cx={15} cy={7} r={2} />
+      <Circle cx={9} cy={17} r={2} />
+    </>
+  ),
 } as const;
 
 export type IconName = keyof typeof glyphs;
