@@ -16,6 +16,7 @@ App (Kamera/Galerie) ──► Bild auf max. 1280 px verkleinern (JPEG)
 - `src/app/index.tsx`: Scan-Screen (Kamera, Galerie, Ergebnis-Karte)
 - `src/app/api/recognize+api.ts`: Server-Route, ruft die Claude API auf (`claude-opus-5-5`)
 - `src/lib/car-schema.ts`: Schema der KI-Antwort (Zod, wird als Structured Output erzwungen)
+- `src/lib/use-welcome-voice.ts`: Begrüssung per Sprachausgabe beim Öffnen (Shorts-Stimme, `expo-speech`)
 
 Der API-Key bleibt auf dem Server und landet **nicht** in der App.
 
@@ -49,3 +50,5 @@ Danach in `app.json` beim `expo-router`-Plugin die `origin` auf die Deploy-URL s
 - Die Preise sind KI-Schätzungen ohne Gewähr. Kilometerstand, Zustand und Ausstattung kann die
   KI auf einem Foto nicht sehen.
 - Jede Erkennung ist ein API-Aufruf und kostet ein paar Rappen.
+- Die Begrüssung nutzt die Vorlesestimme des Handys. Ist das iPhone auf lautlos, hört man sie
+  nicht. Im Browser blockieren viele Browser Ton, bevor man auf die Seite geklickt hat.

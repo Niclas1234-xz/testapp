@@ -1,6 +1,7 @@
 import { Image } from 'expo-image';
 import { ImageManipulator, SaveFormat } from 'expo-image-manipulator';
 import * as ImagePicker from 'expo-image-picker';
+import * as Speech from 'expo-speech';
 import { useState } from 'react';
 import {
   ActivityIndicator,
@@ -14,6 +15,7 @@ import {
 } from 'react-native';
 
 import type { CarResult } from '@/lib/car-schema';
+import { useWelcomeVoice } from '@/lib/use-welcome-voice';
 
 // Longest edge sent to the AI. Plenty for recognition and keeps the upload small.
 const MAX_IMAGE_EDGE = 1280;
@@ -49,8 +51,11 @@ export default function ScanScreen() {
   const [result, setResult] = useState<CarResult | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
+  useWelcomeVoice();
 
   async function pick(source: 'camera' | 'library') {
+    // Don't let the welcome voice keep talking over the camera or photo picker.
+    Speech.stop();
     const permission =
       source === 'camera'
         ? await ImagePicker.requestCameraPermissionsAsync()
