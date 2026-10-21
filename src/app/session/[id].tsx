@@ -30,6 +30,7 @@ import {
   initials,
   type Session,
 } from '@/lib/schedule';
+import { STUDIO } from '@/lib/studio';
 import { colors, fonts, radius } from '@/lib/theme';
 
 type Step = 'review' | 'processing' | 'done' | 'cancelled';
@@ -231,7 +232,7 @@ function Ticket({ session, booked }: { session: Session; booked: boolean }) {
   const details: { label: string; value: string }[] = [
     { label: 'Date', value: formatShortDay(session.start) },
     { label: 'Time', value: `${formatTime(session.start)} – ${formatTime(endTime(session))}` },
-    { label: 'Location', value: session.location },
+    { label: 'Location', value: STUDIO.address || session.location },
     { label: 'Duration', value: `${session.durationMin} min` },
   ];
 

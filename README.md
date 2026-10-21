@@ -20,7 +20,7 @@ Trainer, Zahlung mit Credits oder Kreditkarte, Bestätigung, Stornieren, Warteli
 - `src/lib/schedule.ts`: Kursarten, Instructors, Standorte und der generierte Stundenplan (4 Wochen ab heute)
 - `src/lib/nest-store.tsx`: Buchungen und Login (nur im Speicher)
 - `src/lib/theme.ts`: Farben und Schriften
-- `src/lib/studio.ts`: Studio-Standort für Google Maps (Adresse dort eintragen)
+- `src/lib/studio.ts`: Studio-Adresse (Museggstrasse 4, Luzern) für Google Maps
 - `src/components/`: Icons (SVG-Linien wie auf der Webseite), Buttons, Chips, Kurskarte
 - `src/components/motion.tsx`: Animationen (Federn beim Drücken, weiche Farbwechsel)
 - `src/components/intro.tsx`: Startanimation (das Wellnest-Logo wird von links nach rechts aufgedeckt; Tippen überspringt)

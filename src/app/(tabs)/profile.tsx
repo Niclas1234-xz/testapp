@@ -13,7 +13,7 @@ import { openSession } from '@/components/session-card';
 import { Button, Eyebrow } from '@/components/ui';
 import { useNest } from '@/lib/nest-store';
 import { formatTime, getInstructor, getSession, weekdayShort, type Session } from '@/lib/schedule';
-import { openStudioInMaps } from '@/lib/studio';
+import { openStudioInMaps, STUDIO } from '@/lib/studio';
 import { colors, fonts, radius, TAB_BAR_SPACE } from '@/lib/theme';
 
 const WEBSITE = 'https://www.thewellnest.ch';
@@ -29,14 +29,14 @@ export default function ProfileScreen() {
     .filter((session): session is Session => !!session && session.start.getTime() > now)
     .sort((a, b) => a.start.getTime() - b.start.getTime());
 
-  const settings: { icon: IconName; label: string; onPress: () => void }[] = [
+  const settings: { icon: IconName; label: string; detail?: string; onPress: () => void }[] = [
     ...(user
       ? [
           { icon: 'bell' as const, label: 'Notifications', onPress: comingSoon },
           { icon: 'card' as const, label: 'Payment methods', onPress: comingSoon },
         ]
       : []),
-    { icon: 'pin', label: 'Location', onPress: openStudioInMaps },
+    { icon: 'pin', label: 'Location', detail: STUDIO.address, onPress: openStudioInMaps },
     {
       icon: 'rings',
       label: 'About The Wellnest',
@@ -122,7 +122,7 @@ export default function ProfileScreen() {
         <View style={styles.list}>
           <View style={styles.settingRow}>
             <Icon name="mail" size={20} color={colors.inkSoft} />
-            <Text style={styles.settingText}>Newsletter</Text>
+            <Text style={[styles.settingText, styles.flex]}>Newsletter</Text>
             <Switch
               value={newsletter}
               onValueChange={setNewsletter}
@@ -141,7 +141,10 @@ export default function ProfileScreen() {
                 pressed && { opacity: 0.6 },
               ]}>
               <Icon name={item.icon} size={20} color={colors.inkSoft} />
-              <Text style={styles.settingText}>{item.label}</Text>
+              <View style={styles.flex}>
+                <Text style={styles.settingText}>{item.label}</Text>
+                {item.detail ? <Text style={styles.settingDetail}>{item.detail}</Text> : null}
+              </View>
               <Icon name="chevronRight" size={16} color={colors.muted} />
             </Pressable>
           ))}
@@ -399,9 +402,14 @@ const styles = StyleSheet.create({
     borderBottomWidth: 0,
   },
   settingText: {
-    flex: 1,
     fontFamily: fonts.regular,
     fontSize: 15,
     color: colors.ink,
+  },
+  settingDetail: {
+    fontFamily: fonts.regular,
+    fontSize: 12,
+    color: colors.muted,
+    marginTop: 2,
   },
 });
