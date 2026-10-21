@@ -12,6 +12,11 @@ const WORDMARK_RATIO = 24571 / 4000;
 const MONOGRAM = `${CDN}/8c032bbc-8792-45f7-b0b3-c82398378dc9/W+schwarz+1.png?format=300w`;
 const MONOGRAM_RATIO = 6557 / 4000;
 
+/** Starts downloading the logos early so the start-up animation can show them right away. */
+export function prefetchLogos() {
+  Image.prefetch([WORDMARK, MONOGRAM]).catch(() => {});
+}
+
 export function Wordmark({ height = 20 }: { height?: number }) {
   const [failed, setFailed] = useState(false);
   if (failed) return <Text style={styles.wordmarkText}>THE WELLNEST</Text>;

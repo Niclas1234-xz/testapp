@@ -22,6 +22,7 @@ Trainer, Zahlung mit Credits oder Kreditkarte, Bestätigung, Stornieren, Warteli
 - `src/lib/theme.ts`: Farben und Schriften
 - `src/components/`: Icons (SVG-Linien wie auf der Webseite), Buttons, Chips, Kurskarte
 - `src/components/motion.tsx`: Animationen (Federn beim Drücken, weiche Farbwechsel)
+- `src/components/intro.tsx`: Startanimation (Ringe zeichnen sich, Logo blendet ein; Tippen überspringt)
 
 ## Starten
 
