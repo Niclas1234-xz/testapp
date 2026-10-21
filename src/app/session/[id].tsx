@@ -47,7 +47,7 @@ export default function BookingScreen() {
     []
   );
 
-  const session = getSession(id);
+  const session = getSession(id, now);
   if (!session) {
     return (
       <View style={styles.screen}>

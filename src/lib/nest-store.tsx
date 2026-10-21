@@ -1,4 +1,5 @@
 import { createContext, use, useEffect, useState, type ReactNode } from 'react';
+import { AppState } from 'react-native';
 
 // In-memory demo state: bookings and login are lost when the app reloads.
 type User = { name: string; email: string };
@@ -12,7 +13,8 @@ export const MEMBERSHIP_CREDITS = 10;
 export const DEMO_CARD = 'Visa •••• 4242';
 
 type NestState = {
-  /** Current time, refreshed every minute so past classes grey out on their own. */
+  /** Current time, refreshed every minute and on returning to the app. Greeting, "Today",
+   * the timetable and which classes are over all follow it. */
   now: number;
   bookings: Booking[];
   bookedIds: string[];
@@ -40,7 +42,14 @@ export function NestProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     const timer = setInterval(() => setNow(Date.now()), 60_000);
-    return () => clearInterval(timer);
+    // Timers pause in the background, so catch up straight away when the app comes back.
+    const subscription = AppState.addEventListener('change', (state) => {
+      if (state === 'active') setNow(Date.now());
+    });
+    return () => {
+      clearInterval(timer);
+      subscription.remove();
+    };
   }, []);
 
   const bookingFor = (sessionId: string) => bookings.find((b) => b.sessionId === sessionId);

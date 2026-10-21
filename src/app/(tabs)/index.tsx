@@ -11,7 +11,7 @@ import { PressableScale } from '@/components/motion';
 import { SessionCard } from '@/components/session-card';
 import { Button, Eyebrow } from '@/components/ui';
 import { useNest } from '@/lib/nest-store';
-import { classTypes, sessions } from '@/lib/schedule';
+import { classTypes, getSchedule } from '@/lib/schedule';
 import { colors, fonts, radius, TAB_BAR_SPACE } from '@/lib/theme';
 
 function greeting(now: number) {
@@ -24,7 +24,7 @@ function greeting(now: number) {
 export default function HomeScreen() {
   const insets = useSafeAreaInsets();
   const { user, isBooked, now } = useNest();
-  const upcoming = sessions.filter((session) => session.start.getTime() > now);
+  const upcoming = getSchedule(now).sessions.filter((session) => session.start.getTime() > now);
   const nextBooking = upcoming.find((session) => isBooked(session.id));
   const upNext = upcoming.filter((session) => session.id !== nextBooking?.id).slice(0, 3);
 

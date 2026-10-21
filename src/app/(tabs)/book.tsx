@@ -1,5 +1,5 @@
 import { router, useLocalSearchParams } from 'expo-router';
-import { useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Modal, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import Animated, {
   FadeIn,
@@ -24,9 +24,8 @@ import {
   formatMonth,
   instructors,
   locations,
-  scheduleStart,
+  getSchedule,
   scheduleWeeks,
-  sessions,
   weekdayShort,
   type Session,
 } from '@/lib/schedule';
@@ -41,27 +40,43 @@ export default function BookScreen() {
   const insets = useSafeAreaInsets();
   const { type = 'all' } = useLocalSearchParams<{ type?: string }>();
   const { now } = useNest();
+  const { sessions, start: scheduleStart } = getSchedule(now);
   const today = new Date(now);
   const todayKey = dayKey(today);
   const todayStart = new Date(today.getFullYear(), today.getMonth(), today.getDate()).getTime();
 
-  const [week, setWeek] = useState(0);
-  const [selectedDay, setSelectedDay] = useState(todayKey);
+  const [pickedDay, setPickedDay] = useState(todayKey);
   const [instructorId, setInstructorId] = useState<string | null>(null);
   const [location, setLocation] = useState<string | null>(null);
   const [filtersOpen, setFiltersOpen] = useState(false);
 
   const [stripWidth, setStripWidth] = useState(0);
   const stripRef = useRef<ScrollView>(null);
-  // Page the strip is scrolling to after an arrow tap; scroll events in between are ignored.
+  // Page the strip is scrolling to on its own; scroll events in between are ignored.
   const scrollTarget = useRef<number | null>(null);
 
   const weeks = Array.from({ length: scheduleWeeks }, (_, w) =>
     Array.from({ length: 7 }, (_, i) => addDays(scheduleStart, w * 7 + i))
   );
+  // Once the picked day is over (the app stayed open past midnight), today takes its place.
+  const pickedStillAhead = weeks
+    .flat()
+    .some((day) => dayKey(day) === pickedDay && day.getTime() >= todayStart);
+  const selectedDay = pickedStillAhead ? pickedDay : todayKey;
+  const week = Math.max(
+    weeks.findIndex((days) => days.some((day) => dayKey(day) === selectedDay)),
+    0
+  );
   const weekStart = weeks[week][0];
   const days = weeks[week];
   const activeFilters = (instructorId ? 1 : 0) + (location ? 1 : 0);
+
+  // Keep the swipeable strip on the week of the selected day (arrows, "Show …", midnight).
+  useEffect(() => {
+    if (!stripWidth) return;
+    scrollTarget.current = week;
+    stripRef.current?.scrollTo({ x: week * stripWidth, animated: true });
+  }, [week, stripWidth]);
 
   const bookable = (session: Session) =>
     session.start.getTime() > now &&
@@ -79,15 +94,6 @@ export default function BookScreen() {
     return weekIndex === 0 ? todayKey : dayKey(weeks[weekIndex][0]);
   }
 
-  function goToWeek(weekIndex: number, key = firstDayOf(weekIndex)) {
-    setWeek(weekIndex);
-    setSelectedDay(key);
-    if (weekIndex !== week && stripWidth > 0) {
-      scrollTarget.current = weekIndex;
-      stripRef.current?.scrollTo({ x: weekIndex * stripWidth, animated: true });
-    }
-  }
-
   function onStripScroll(x: number) {
     if (!stripWidth) return;
     const page = Math.round(x / stripWidth);
@@ -96,10 +102,7 @@ export default function BookScreen() {
       if (page === scrollTarget.current) scrollTarget.current = null;
       return;
     }
-    if (page !== week) {
-      setWeek(page);
-      setSelectedDay(firstDayOf(page));
-    }
+    if (page !== week) setPickedDay(firstDayOf(page));
   }
 
   // Shown when the selected day is empty, so there is always a way forward.
@@ -110,11 +113,6 @@ export default function BookScreen() {
             session.start.getTime() >= addDays(selectedDate, 1).getTime() && bookable(session)
         )
       : undefined;
-
-  function showDay(date: Date) {
-    const weekIndex = Math.floor((date.getTime() - scheduleStart.getTime()) / (7 * 86_400_000));
-    goToWeek(Math.min(weekIndex, scheduleWeeks - 1), dayKey(date));
-  }
 
   return (
     <View style={styles.screen}>
@@ -147,13 +145,13 @@ export default function BookScreen() {
                 icon="chevronLeft"
                 label="Previous week"
                 disabled={week === 0}
-                onPress={() => goToWeek(week - 1)}
+                onPress={() => setPickedDay(firstDayOf(week - 1))}
               />
               <ArrowButton
                 icon="chevronRight"
                 label="Next week"
                 disabled={week === scheduleWeeks - 1}
-                onPress={() => goToWeek(week + 1)}
+                onPress={() => setPickedDay(firstDayOf(week + 1))}
               />
             </View>
           </View>
@@ -186,7 +184,7 @@ export default function BookScreen() {
                           isToday={key === todayKey}
                           past={past}
                           hasClasses={sessions.some((s) => dayKey(s.start) === key && bookable(s))}
-                          onPress={() => setSelectedDay(key)}
+                          onPress={() => setPickedDay(key)}
                         />
                       );
                     })}
@@ -242,7 +240,7 @@ export default function BookScreen() {
                   label={`Show ${formatDay(nextAvailable.start).split(',')[0]}`}
                   variant="outline"
                   size="sm"
-                  onPress={() => showDay(nextAvailable.start)}
+                  onPress={() => setPickedDay(dayKey(nextAvailable.start))}
                 />
               )}
             </Animated.View>

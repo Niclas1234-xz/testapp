@@ -6,7 +6,7 @@ import { Icon } from '@/components/icon';
 import { ModalHeader } from '@/components/modal-header';
 import { Avatar, Eyebrow } from '@/components/ui';
 import { useNest } from '@/lib/nest-store';
-import { formatDay, formatTime, getClassType, instructors, sessions } from '@/lib/schedule';
+import { formatDay, formatTime, getClassType, getSchedule, instructors } from '@/lib/schedule';
 import { colors, fonts, radius } from '@/lib/theme';
 
 export default function InstructorSheet() {
@@ -21,7 +21,8 @@ export default function InstructorSheet() {
       </View>
     );
   }
-  const upcoming = sessions
+  const upcoming = getSchedule(now)
+    .sessions
     .filter((session) => session.instructorId === id && session.start.getTime() > now)
     .slice(0, 4);
 

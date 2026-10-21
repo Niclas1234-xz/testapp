@@ -264,23 +264,29 @@ function at(day: Date, time: string) {
   return date;
 }
 
-function buildSchedule() {
+// Days since 1970 for a local calendar date. Seeding by date (not by position in the window)
+// keeps every class the same when the window moves on, so booking ids stay valid.
+function dayNumber(day: Date) {
+  return Math.round(Date.UTC(day.getFullYear(), day.getMonth(), day.getDate()) / 86_400_000);
+}
+
+function buildSchedule(firstDay: Date) {
   const sessions: Session[] = [];
-  const firstDay = startOfWeek(new Date());
 
   for (let dayIndex = 0; dayIndex < WEEKS_AHEAD * 7; dayIndex++) {
     const day = addDays(firstDay, dayIndex);
-    const slots = DAILY_SLOTS[dayIndex % DAILY_SLOTS.length];
+    const dayNo = dayNumber(day);
+    const slots = DAILY_SLOTS[dayNo % DAILY_SLOTS.length];
 
     slots.forEach((time, slot) => {
-      const seed = dayIndex * slots.length + slot;
+      const seed = dayNo * slots.length + slot;
       const typeId = ROTATION[seed % ROTATION.length];
       const capacity = typeId === 'mat-pilates' ? 12 : 16;
       sessions.push({
         id: `${dayKey(day)}-${slot}`,
         typeId,
         title: classTypes.find((type) => type.id === typeId)!.name,
-        instructorId: instructors[(seed * 3 + dayIndex) % instructors.length].id,
+        instructorId: instructors[(seed * 3 + dayNo) % instructors.length].id,
         location: locations[seed % 3 === 0 ? 1 : 0],
         start: at(day, time),
         durationMin: slot === 0 ? 45 : 50,
@@ -293,12 +299,13 @@ function buildSchedule() {
 
     // Special events on Sundays, alternating weekly.
     if (day.getDay() === 0) {
-      const event = EVENTS[Math.floor(dayIndex / 7) % EVENTS.length];
+      const weekNo = Math.floor(dayNo / 7);
+      const event = EVENTS[weekNo % EVENTS.length];
       sessions.push({
         id: `${dayKey(day)}-event`,
         typeId: 'event',
         title: event.title,
-        instructorId: instructors[Math.floor(dayIndex / 7) % instructors.length].id,
+        instructorId: instructors[weekNo % instructors.length].id,
         location: 'Luzern',
         start: at(day, event.time),
         durationMin: event.durationMin,
@@ -312,12 +319,22 @@ function buildSchedule() {
   return sessions.sort((a, b) => a.start.getTime() - b.start.getTime());
 }
 
-export const sessions = buildSchedule();
-export const scheduleStart = startOfWeek(new Date());
 export const scheduleWeeks = WEEKS_AHEAD;
 
-export function getSession(id: string) {
-  return sessions.find((session) => session.id === id);
+export type Schedule = { start: Date; sessions: Session[] };
+
+let cached: { key: string; schedule: Schedule } | undefined;
+
+/** Timetable from Monday of the current week, rebuilt once a new week starts. */
+export function getSchedule(now: number): Schedule {
+  const start = startOfWeek(new Date(now));
+  const key = dayKey(start);
+  if (cached?.key !== key) cached = { key, schedule: { start, sessions: buildSchedule(start) } };
+  return cached.schedule;
+}
+
+export function getSession(id: string, now: number) {
+  return getSchedule(now).sessions.find((session) => session.id === id);
 }
 
 export function getClassType(id: ClassTypeId) {

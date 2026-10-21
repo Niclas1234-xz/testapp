@@ -23,7 +23,7 @@ export default function ProfileScreen() {
   const [newsletter, setNewsletter] = useState(false);
 
   const bookings = bookedIds
-    .map(getSession)
+    .map((id) => getSession(id, now))
     .filter((session): session is Session => !!session && session.start.getTime() > now)
     .sort((a, b) => a.start.getTime() - b.start.getTime());
 
