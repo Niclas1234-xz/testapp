@@ -7,6 +7,8 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Svg, { Circle } from 'react-native-svg';
 
 import { Icon, type IconName } from '@/components/icon';
+import { Monogram } from '@/components/logo';
+import { PressableScale } from '@/components/motion';
 import { openSession } from '@/components/session-card';
 import { Button, Eyebrow } from '@/components/ui';
 import { useNest } from '@/lib/nest-store';
@@ -54,8 +56,11 @@ export default function ProfileScreen() {
       automaticallyAdjustKeyboardInsets
       showsVerticalScrollIndicator={false}>
       <View style={styles.header}>
-        <Eyebrow>The Nest</Eyebrow>
-        <Text style={styles.title}>{user ? `Hello, ${user.name}` : 'Welcome'}</Text>
+        <View style={styles.flex}>
+          <Eyebrow>The Nest</Eyebrow>
+          <Text style={styles.title}>{user ? `Hello, ${user.name}` : 'Welcome'}</Text>
+        </View>
+        <Monogram height={30} />
       </View>
 
       {user ? (
@@ -190,23 +195,29 @@ function LoginCard() {
 }
 
 function BookingRow({ session, last }: { session: Session; last: boolean }) {
+  const { bookingFor } = useNest();
+  const waitlist = bookingFor(session.id)?.waitlist;
   return (
-    <Pressable
+    <PressableScale
+      scaleTo={0.98}
       onPress={() => openSession(session.id)}
-      style={({ pressed }) => [styles.bookingRow, last && styles.lastRow, pressed && { opacity: 0.6 }]}>
+      style={[styles.bookingRow, last && styles.lastRow]}>
       <View style={styles.dateBlock}>
         <Text style={styles.dateDay}>{session.start.getDate()}</Text>
         <Text style={styles.dateWeekday}>{weekdayShort(session.start)}</Text>
       </View>
       <View style={styles.flex}>
-        <Text style={styles.bookingTitle}>{session.title}</Text>
+        <Text style={styles.bookingTitle}>
+          {session.title}
+          {waitlist && <Text style={styles.waitlistTag}>  · Waitlist</Text>}
+        </Text>
         <Text style={styles.bookingMeta}>
           {formatTime(session.start)} · {getInstructor(session.instructorId).name.split(' ')[0]} ·{' '}
           {session.location}
         </Text>
       </View>
       <Icon name="chevronRight" size={16} color={colors.muted} />
-    </Pressable>
+    </PressableScale>
   );
 }
 
@@ -220,6 +231,9 @@ const styles = StyleSheet.create({
   },
   header: {
     paddingHorizontal: 24,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
   },
   title: {
     fontFamily: fonts.light,
@@ -359,6 +373,11 @@ const styles = StyleSheet.create({
     fontFamily: fonts.medium,
     fontSize: 15,
     color: colors.ink,
+  },
+  waitlistTag: {
+    fontFamily: fonts.regular,
+    fontSize: 13,
+    color: colors.terracotta,
   },
   bookingMeta: {
     fontFamily: fonts.regular,

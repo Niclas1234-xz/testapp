@@ -1,5 +1,5 @@
 import { router, useLocalSearchParams } from 'expo-router';
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 import { Modal, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import Animated, {
   FadeIn,
@@ -51,8 +51,16 @@ export default function BookScreen() {
   const [location, setLocation] = useState<string | null>(null);
   const [filtersOpen, setFiltersOpen] = useState(false);
 
-  const weekStart = addDays(scheduleStart, week * 7);
-  const days = Array.from({ length: 7 }, (_, i) => addDays(weekStart, i));
+  const [stripWidth, setStripWidth] = useState(0);
+  const stripRef = useRef<ScrollView>(null);
+  // Page the strip is scrolling to after an arrow tap; scroll events in between are ignored.
+  const scrollTarget = useRef<number | null>(null);
+
+  const weeks = Array.from({ length: scheduleWeeks }, (_, w) =>
+    Array.from({ length: 7 }, (_, i) => addDays(scheduleStart, w * 7 + i))
+  );
+  const weekStart = weeks[week][0];
+  const days = weeks[week];
   const activeFilters = (instructorId ? 1 : 0) + (location ? 1 : 0);
 
   const bookable = (session: Session) =>
@@ -66,10 +74,32 @@ export default function BookScreen() {
   );
   const selectedDate = days.find((day) => dayKey(day) === selectedDay) ?? today;
 
-  function changeWeek(delta: number) {
-    const next = week + delta;
-    setWeek(next);
-    setSelectedDay(next === 0 ? todayKey : dayKey(addDays(scheduleStart, next * 7)));
+  // Opening a week selects today in the current week and Monday in later weeks.
+  function firstDayOf(weekIndex: number) {
+    return weekIndex === 0 ? todayKey : dayKey(weeks[weekIndex][0]);
+  }
+
+  function goToWeek(weekIndex: number, key = firstDayOf(weekIndex)) {
+    setWeek(weekIndex);
+    setSelectedDay(key);
+    if (weekIndex !== week && stripWidth > 0) {
+      scrollTarget.current = weekIndex;
+      stripRef.current?.scrollTo({ x: weekIndex * stripWidth, animated: true });
+    }
+  }
+
+  function onStripScroll(x: number) {
+    if (!stripWidth) return;
+    const page = Math.round(x / stripWidth);
+    if (Math.abs(x - page * stripWidth) > 1) return; // still between two weeks
+    if (scrollTarget.current !== null) {
+      if (page === scrollTarget.current) scrollTarget.current = null;
+      return;
+    }
+    if (page !== week) {
+      setWeek(page);
+      setSelectedDay(firstDayOf(page));
+    }
   }
 
   // Shown when the selected day is empty, so there is always a way forward.
@@ -83,8 +113,7 @@ export default function BookScreen() {
 
   function showDay(date: Date) {
     const weekIndex = Math.floor((date.getTime() - scheduleStart.getTime()) / (7 * 86_400_000));
-    setWeek(Math.min(weekIndex, scheduleWeeks - 1));
-    setSelectedDay(dayKey(date));
+    goToWeek(Math.min(weekIndex, scheduleWeeks - 1), dayKey(date));
   }
 
   return (
@@ -118,35 +147,59 @@ export default function BookScreen() {
                 icon="chevronLeft"
                 label="Previous week"
                 disabled={week === 0}
-                onPress={() => changeWeek(-1)}
+                onPress={() => goToWeek(week - 1)}
               />
               <ArrowButton
                 icon="chevronRight"
                 label="Next week"
                 disabled={week === scheduleWeeks - 1}
-                onPress={() => changeWeek(1)}
+                onPress={() => goToWeek(week + 1)}
               />
             </View>
           </View>
 
-          <View style={styles.dayStrip}>
-            {days.map((day) => {
-              const key = dayKey(day);
-              const selected = key === selectedDay;
-              const past = day.getTime() < todayStart;
-              const hasClasses = sessions.some((s) => dayKey(s.start) === key && bookable(s));
-              return (
-                <DayPill
-                  key={key}
-                  date={day}
-                  selected={selected}
-                  isToday={key === todayKey}
-                  past={past}
-                  hasClasses={hasClasses}
-                  onPress={() => setSelectedDay(key)}
-                />
-              );
-            })}
+          {/* Swipe left and right to move between weeks. */}
+          <View
+            style={styles.stripViewport}
+            onLayout={(event) => setStripWidth(event.nativeEvent.layout.width)}>
+            {stripWidth > 0 && (
+              <ScrollView
+                ref={stripRef}
+                horizontal
+                pagingEnabled
+                showsHorizontalScrollIndicator={false}
+                scrollEventThrottle={16}
+                onScrollBeginDrag={() => {
+                  scrollTarget.current = null;
+                }}
+                onScroll={(event) => onStripScroll(event.nativeEvent.contentOffset.x)}>
+                {weeks.map((weekDays, weekIndex) => (
+                  <View key={weekIndex} style={[styles.dayStrip, { width: stripWidth }]}>
+                    {weekDays.map((day) => {
+                      const key = dayKey(day);
+                      const past = day.getTime() < todayStart;
+                      return (
+                        <DayPill
+                          key={key}
+                          date={day}
+                          selected={key === selectedDay}
+                          isToday={key === todayKey}
+                          past={past}
+                          hasClasses={sessions.some((s) => dayKey(s.start) === key && bookable(s))}
+                          onPress={() => setSelectedDay(key)}
+                        />
+                      );
+                    })}
+                  </View>
+                ))}
+              </ScrollView>
+            )}
+          </View>
+
+          <View style={styles.pageDots}>
+            {weeks.map((_, weekIndex) => (
+              <PageDot key={weekIndex} active={weekIndex === week} />
+            ))}
           </View>
         </View>
 
@@ -251,6 +304,15 @@ function DayPill({
       <Animated.View style={[styles.dot, hasClasses && !past ? dotStyle : null]} />
     </AnimatedPressable>
   );
+}
+
+function PageDot({ active }: { active: boolean }) {
+  const progress = useActiveProgress(active, 260);
+  const style = useAnimatedStyle(() => ({
+    width: 5 + progress.get() * 11,
+    backgroundColor: interpolateColor(progress.get(), [0, 1], [colors.line, colors.bronze]),
+  }));
+  return <Animated.View style={[styles.pageDot, style]} />;
 }
 
 function ArrowButton({
@@ -429,10 +491,23 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  dayStrip: {
+  stripViewport: {
     marginTop: 12,
+    minHeight: 72,
+  },
+  dayStrip: {
     flexDirection: 'row',
     gap: 4,
+  },
+  pageDots: {
+    flexDirection: 'row',
+    justifyContent: 'center',
+    gap: 5,
+    marginTop: 10,
+  },
+  pageDot: {
+    height: 5,
+    borderRadius: 3,
   },
   day: {
     flex: 1,

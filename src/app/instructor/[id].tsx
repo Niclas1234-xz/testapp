@@ -6,19 +6,21 @@ import { Icon } from '@/components/icon';
 import { ModalHeader } from '@/components/modal-header';
 import { Avatar, Eyebrow } from '@/components/ui';
 import { useNest } from '@/lib/nest-store';
-import {
-  formatDay,
-  formatTime,
-  getClassType,
-  getInstructor,
-  sessions,
-} from '@/lib/schedule';
+import { formatDay, formatTime, getClassType, instructors, sessions } from '@/lib/schedule';
 import { colors, fonts, radius } from '@/lib/theme';
 
 export default function InstructorSheet() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const { now } = useNest();
-  const instructor = getInstructor(id);
+  const instructor = instructors.find((i) => i.id === id);
+  if (!instructor) {
+    return (
+      <View style={styles.screen}>
+        <ModalHeader title="Instructor" />
+        <Text style={styles.bio}>This instructor could not be found.</Text>
+      </View>
+    );
+  }
   const upcoming = sessions
     .filter((session) => session.instructorId === id && session.start.getTime() > now)
     .slice(0, 4);

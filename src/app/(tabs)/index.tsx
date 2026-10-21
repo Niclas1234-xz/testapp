@@ -6,6 +6,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Svg, { Circle } from 'react-native-svg';
 
 import { Icon } from '@/components/icon';
+import { Wordmark } from '@/components/logo';
 import { PressableScale } from '@/components/motion';
 import { SessionCard } from '@/components/session-card';
 import { Button, Eyebrow } from '@/components/ui';
@@ -38,7 +39,7 @@ export default function HomeScreen() {
             {greeting(now)}
             {user ? `, ${user.name}` : ''}
           </Text>
-          <Text style={styles.wordmark}>THE WELLNEST</Text>
+          <Wordmark height={20} />
         </View>
         <PressableScale
           accessibilityLabel="Profile"
@@ -151,13 +152,7 @@ const styles = StyleSheet.create({
     fontFamily: fonts.regular,
     fontSize: 13,
     color: colors.muted,
-    marginBottom: 4,
-  },
-  wordmark: {
-    fontFamily: fonts.light,
-    fontSize: 20,
-    letterSpacing: 6,
-    color: colors.ink,
+    marginBottom: 8,
   },
   roundButton: {
     width: 44,

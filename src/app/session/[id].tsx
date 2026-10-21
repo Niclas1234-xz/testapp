@@ -1,6 +1,6 @@
 import * as Haptics from 'expo-haptics';
 import { router, useLocalSearchParams } from 'expo-router';
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { ScrollView, StyleSheet, Text, View } from 'react-native';
 import Animated, {
   FadeIn,
@@ -37,6 +37,15 @@ export default function BookingScreen() {
   const { bookingFor, book, cancel, creditsLeft, now } = useNest();
   const [choice, setChoice] = useState<PaymentMethod>('credits');
   const [step, setStep] = useState<Step>('review');
+  const pending = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  // Closing the screen while the payment is "processing" must not book anything.
+  useEffect(
+    () => () => {
+      if (pending.current) clearTimeout(pending.current);
+    },
+    []
+  );
 
   const session = getSession(id);
   if (!session) {
@@ -62,8 +71,9 @@ export default function BookingScreen() {
   function confirm() {
     setStep('processing');
     // Stand-in for the payment provider round trip.
-    setTimeout(() => {
-      book(sessionId, method);
+    pending.current = setTimeout(() => {
+      pending.current = null;
+      book(sessionId, method, full);
       setStep('done');
       if (process.env.EXPO_OS !== 'web') {
         Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
@@ -74,7 +84,7 @@ export default function BookingScreen() {
   if (step === 'done') {
     return (
       <View style={styles.screen}>
-        <ModalHeader title="Booked" />
+        <ModalHeader title={full ? 'Waitlist' : 'Booked'} />
         <Success session={session} method={method} waitlist={full} />
         <View style={[styles.footer, { paddingBottom: footerPadding }]}>
           <Button label="Done" onPress={() => router.back()} style={styles.flex} />
@@ -89,7 +99,7 @@ export default function BookingScreen() {
 
       <ScrollView style={styles.flex} contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
         <Animated.View entering={FadeInDown.duration(450)}>
-          <Ticket session={session} />
+          <Ticket session={session} booked={!!booking && !booking.waitlist} />
         </Animated.View>
 
         {booking ? (
@@ -98,9 +108,13 @@ export default function BookingScreen() {
               <Icon name="check" size={18} color={colors.onDark} strokeWidth={2} />
             </View>
             <View style={styles.flex}>
-              <Text style={styles.bookedTitle}>You’re booked</Text>
+              <Text style={styles.bookedTitle}>
+                {booking.waitlist ? 'You’re on the waitlist' : 'You’re booked'}
+              </Text>
               <Text style={styles.bookedText}>
-                Paid with {booking.method === 'credits' ? '1 credit' : DEMO_CARD}
+                {booking.waitlist
+                  ? `Charged to ${booking.method === 'credits' ? '1 credit' : DEMO_CARD} if a spot opens`
+                  : `Paid with ${booking.method === 'credits' ? '1 credit' : DEMO_CARD}`}
               </Text>
             </View>
           </Animated.View>
@@ -149,7 +163,7 @@ export default function BookingScreen() {
           <Button label="Class finished" variant="outline" disabled style={styles.flex} />
         ) : booking ? (
           <Button
-            label="Cancel booking"
+            label={booking.waitlist ? 'Leave waitlist' : 'Cancel booking'}
             variant="outline"
             onPress={() => cancel(sessionId)}
             style={styles.flex}
@@ -174,11 +188,13 @@ export default function BookingScreen() {
   );
 }
 
-function Ticket({ session }: { session: Session }) {
+function Ticket({ session, booked }: { session: Session; booked: boolean }) {
   const type = getClassType(session.typeId);
   const instructor = getInstructor(session.instructorId);
-  const full = session.spotsLeft === 0;
-  const taken = session.capacity - session.spotsLeft;
+  // Your own booking takes one of the free spots.
+  const spotsLeft = Math.max(session.spotsLeft - (booked ? 1 : 0), 0);
+  const full = spotsLeft === 0;
+  const taken = session.capacity - spotsLeft;
 
   const details: { label: string; value: string }[] = [
     { label: 'Date', value: formatShortDay(session.start) },
@@ -229,7 +245,7 @@ function Ticket({ session }: { session: Session }) {
 
       <View style={styles.capacity}>
         <Text style={styles.capacityText}>
-          {full ? 'Fully booked' : `${session.spotsLeft} of ${session.capacity} spots left`}
+          {full ? 'Fully booked' : `${spotsLeft} of ${session.capacity} spots left`}
         </Text>
         <View style={styles.track}>
           <View style={[styles.trackFill, { width: `${(taken / session.capacity) * 100}%` }]} />
@@ -305,7 +321,11 @@ function Success({ session, method, waitlist }: { session: Session; method: Paym
       <Animated.View entering={FadeInDown.delay(310).duration(400)} style={styles.paidPill}>
         <Icon name={method === 'credits' ? 'rings' : 'card'} size={14} color={colors.bronze} />
         <Text style={styles.paidText}>
-          {method === 'credits' ? 'Paid with 1 credit' : `CHF ${session.priceChf} · ${DEMO_CARD}`}
+          {waitlist
+            ? 'No charge until a spot opens'
+            : method === 'credits'
+              ? 'Paid with 1 credit'
+              : `CHF ${session.priceChf} · ${DEMO_CARD}`}
         </Text>
       </Animated.View>
       <Animated.Text entering={FadeIn.delay(450).duration(400)} style={styles.hint}>

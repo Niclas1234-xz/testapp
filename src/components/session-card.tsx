@@ -3,7 +3,7 @@ import { StyleSheet, Text, View } from 'react-native';
 
 import { Icon } from '@/components/icon';
 import { PressableScale } from '@/components/motion';
-import { useNest } from '@/lib/nest-store';
+import { useNest, type Booking } from '@/lib/nest-store';
 import { formatTime, getClassType, getInstructor, relativeDay, type Session } from '@/lib/schedule';
 import { colors, fonts, radius } from '@/lib/theme';
 
@@ -15,9 +15,10 @@ export function openInstructor(id: string) {
   router.push({ pathname: '/instructor/[id]', params: { id } });
 }
 
-export function availability(session: Session, booked: boolean) {
+function availability(session: Session, booking: Booking | undefined) {
   const spots = session.spotsLeft;
-  if (booked) return { text: 'Booked', color: colors.olive };
+  if (booking?.waitlist) return { text: 'On waitlist', color: colors.olive };
+  if (booking) return { text: 'Booked', color: colors.olive };
   if (spots === 0) return { text: 'Full · waitlist', color: colors.terracotta };
   if (spots <= 3) return { text: `${spots} ${spots === 1 ? 'spot' : 'spots'} left`, color: colors.bronze };
   return { text: `${spots} spots left`, color: colors.muted };
@@ -25,11 +26,12 @@ export function availability(session: Session, booked: boolean) {
 
 // `showDay` swaps the duration for "Today"/"Tomorrow"/"Thu 22", for lists that span several days.
 export function SessionCard({ session, showDay }: { session: Session; showDay?: boolean }) {
-  const { isBooked, now } = useNest();
-  const booked = isBooked(session.id);
+  const { bookingFor, now } = useNest();
+  const booking = bookingFor(session.id);
+  const booked = !!booking;
   const type = getClassType(session.typeId);
   const instructor = getInstructor(session.instructorId);
-  const status = availability(session, booked);
+  const status = availability(session, booking);
 
   return (
     <PressableScale

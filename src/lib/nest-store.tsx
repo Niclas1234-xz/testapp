@@ -4,7 +4,8 @@ import { createContext, use, useEffect, useState, type ReactNode } from 'react';
 type User = { name: string; email: string };
 
 export type PaymentMethod = 'credits' | 'card';
-export type Booking = { sessionId: string; method: PaymentMethod };
+/** `waitlist` bookings are not charged until a spot opens up. */
+export type Booking = { sessionId: string; method: PaymentMethod; waitlist: boolean };
 
 // Demo membership: every member starts with this many credits.
 export const MEMBERSHIP_CREDITS = 10;
@@ -18,7 +19,7 @@ type NestState = {
   creditsLeft: number;
   isBooked: (sessionId: string) => boolean;
   bookingFor: (sessionId: string) => Booking | undefined;
-  book: (sessionId: string, method: PaymentMethod) => void;
+  book: (sessionId: string, method: PaymentMethod, waitlist: boolean) => void;
   cancel: (sessionId: string) => void;
   user: User | null;
   logIn: (email: string) => void;
@@ -49,12 +50,15 @@ export function NestProvider({ children }: { children: ReactNode }) {
     bookings,
     bookedIds: bookings.map((b) => b.sessionId),
     // Cancelling removes the booking, which hands its credit back.
-    creditsLeft: MEMBERSHIP_CREDITS - bookings.filter((b) => b.method === 'credits').length,
+    creditsLeft:
+      MEMBERSHIP_CREDITS - bookings.filter((b) => b.method === 'credits' && !b.waitlist).length,
     isBooked: (sessionId) => !!bookingFor(sessionId),
     bookingFor,
-    book: (sessionId, method) =>
+    book: (sessionId, method, waitlist) =>
       setBookings((current) =>
-        current.some((b) => b.sessionId === sessionId) ? current : [...current, { sessionId, method }]
+        current.some((b) => b.sessionId === sessionId)
+          ? current
+          : [...current, { sessionId, method, waitlist }]
       ),
     cancel: (sessionId) => setBookings((current) => current.filter((b) => b.sessionId !== sessionId)),
     user,
