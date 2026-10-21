@@ -1,58 +1,52 @@
-import { useEffect, useRef } from 'react';
-import { Modal, Pressable, StyleSheet } from 'react-native';
+import { Image } from 'expo-image';
+import { useEffect, useRef, useState } from 'react';
+import { Modal, Pressable, StyleSheet, Text, View } from 'react-native';
 import Animated, {
   Easing,
   ReduceMotion,
-  useAnimatedProps,
   useAnimatedStyle,
-  useReducedMotion,
   useSharedValue,
   withDelay,
-  withSpring,
   withTiming,
 } from 'react-native-reanimated';
-import Svg, { Circle } from 'react-native-svg';
 
-import { Wordmark } from '@/components/logo';
-import { Eyebrow } from '@/components/ui';
-import { colors } from '@/lib/theme';
+import { WORDMARK, WORDMARK_RATIO } from '@/components/logo';
+import { colors, fonts } from '@/lib/theme';
 
-const AnimatedCircle = Animated.createAnimatedComponent(Circle);
+const LOGO_WIDTH = 240;
+const LOGO_HEIGHT = LOGO_WIDTH / WORDMARK_RATIO;
+// Soft leading edge of the cream curtain that wipes across the logo.
+const EDGE = 48;
+const EDGE_STEPS = 12;
 
-const RADIUS = 34;
-const CIRCUMFERENCE = 2 * Math.PI * RADIUS;
-const WIDTH = 160;
-const HEIGHT = 84;
-// Horizontal distance of each ring from the centre: apart at first, then interlocked like the
-// rings on the website's Signature Class card.
-const APART = 44;
-const TOGETHER = 19;
-
-const DURATION = 2800;
+const REVEAL = 1300;
+const HOLD = 800;
 const EXIT = 550;
+// How long to wait for the logo image before animating the text version instead.
+const IMAGE_TIMEOUT = 1200;
 // Taps this early are most likely left over from opening the app, not a wish to skip.
 const SKIP_AFTER = 700;
 
-// The intro is mostly drawing and fading, so it also plays with "reduce motion" switched on
-// (Reanimated would otherwise jump every animation straight to its end). Only the sliding of
-// the rings is left out then.
+// A wipe and a fade, so it also plays with "reduce motion" on (Reanimated would otherwise jump
+// every animation straight to its end).
 const never = ReduceMotion.Never;
-const ease = Easing.out(Easing.cubic);
+
+type Mode = 'waiting' | 'image' | 'text';
 
 /**
- * Start-up animation: two rings draw themselves and interlock, the Wellnest logo rises in,
- * then everything fades away. Tap to skip.
+ * Start-up animation: the Wellnest wordmark is uncovered from left to right by a soft-edged
+ * curtain, settles, then fades into the app. Tap to skip.
  *
- * It lives in a Modal so it is guaranteed to sit above the navigator on iOS and Android, and
- * its clock only starts once that Modal is actually on screen.
+ * It lives in a Modal so it always sits above the navigator, and only starts once that Modal is
+ * on screen and the logo is ready.
  */
 export function Intro({ onShown, onDone }: { onShown: () => void; onDone: () => void }) {
-  const reduceMotion = useReducedMotion();
-  const draw = useSharedValue(0);
-  const join = useSharedValue(0);
-  const logo = useSharedValue(0);
-  const tagline = useSharedValue(0);
+  const [shown, setShown] = useState(false);
+  const [mode, setMode] = useState<Mode>('waiting');
+  const reveal = useSharedValue(0);
+  const settle = useSharedValue(0);
   const exit = useSharedValue(0);
+  const shownOnce = useRef(false);
   const startedAt = useRef<number | null>(null);
   const finished = useRef(false);
   const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -65,55 +59,61 @@ export function Intro({ onShown, onDone }: { onShown: () => void; onDone: () => 
     timer.current = setTimeout(onDone, after);
   }
 
-  function start() {
-    if (startedAt.current !== null) return;
-    startedAt.current = Date.now();
+  function show() {
+    if (shownOnce.current) return;
+    shownOnce.current = true;
+    setShown(true);
     onShown();
-    draw.set(withTiming(1, { duration: 1000, easing: Easing.inOut(Easing.cubic), reduceMotion: never }));
-    join.set(
-      reduceMotion ? 1 : withDelay(550, withSpring(1, { damping: 15, stiffness: 80, reduceMotion: never }), never)
-    );
-    logo.set(withDelay(1000, withTiming(1, { duration: 650, easing: ease, reduceMotion: never }), never));
-    tagline.set(withDelay(1350, withTiming(1, { duration: 600, reduceMotion: never }), never));
-    timer.current = setTimeout(() => finish(EXIT), DURATION - EXIT);
   }
+
+  // Start once the Modal is visible and we know whether the image or the text version is shown.
+  useEffect(() => {
+    if (!shown || mode === 'waiting' || startedAt.current !== null) return;
+    startedAt.current = Date.now();
+    reveal.set(
+      withDelay(150, withTiming(1, { duration: REVEAL, easing: Easing.inOut(Easing.cubic), reduceMotion: never }), never)
+    );
+    settle.set(
+      withDelay(150, withTiming(1, { duration: REVEAL + 300, easing: Easing.out(Easing.cubic), reduceMotion: never }), never)
+    );
+    timer.current = setTimeout(() => finish(EXIT), 150 + REVEAL + HOLD);
+    // finish only touches refs and shared values.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [shown, mode]);
+
+  // Fall back to the text logo if the image is slow, and never keep the app covered for long.
+  useEffect(() => {
+    if (!shown) return;
+    const imageTimeout = setTimeout(() => setMode((m) => (m === 'waiting' ? 'text' : m)), IMAGE_TIMEOUT);
+    return () => clearTimeout(imageTimeout);
+  }, [shown]);
+
+  useEffect(() => {
+    // Safety nets in case the Modal never reports that it is shown.
+    const showFallback = setTimeout(show, 800);
+    const hardStop = setTimeout(onDone, 7000);
+    return () => {
+      clearTimeout(showFallback);
+      clearTimeout(hardStop);
+      if (timer.current) clearTimeout(timer.current);
+    };
+    // Mount-only.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   function skip() {
     if (startedAt.current === null || Date.now() - startedAt.current < SKIP_AFTER) return;
     finish(300);
   }
 
-  useEffect(() => {
-    // Safety nets: start even if the Modal never reports that it is shown, and never keep the
-    // app covered for long.
-    const fallback = setTimeout(start, 800);
-    const hardStop = setTimeout(onDone, 7000);
-    return () => {
-      clearTimeout(fallback);
-      clearTimeout(hardStop);
-      if (timer.current) clearTimeout(timer.current);
-    };
-    // Mount-only: the shared values are stable and the handlers only read refs.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
-
-  const leftRing = useAnimatedProps(() => ({
-    cx: WIDTH / 2 - (APART + (TOGETHER - APART) * join.get()),
-    strokeDashoffset: CIRCUMFERENCE * (1 - draw.get()),
-  }));
-  const rightRing = useAnimatedProps(() => ({
-    cx: WIDTH / 2 + (APART + (TOGETHER - APART) * join.get()),
-    strokeDashoffset: -CIRCUMFERENCE * (1 - draw.get()),
-  }));
-  const overlayStyle = useAnimatedStyle(() => ({ opacity: 1 - exit.get() }));
-  const contentStyle = useAnimatedStyle(() => ({
-    transform: [{ scale: 1 + exit.get() * 0.06 }],
+  const curtainStyle = useAnimatedStyle(() => ({
+    transform: [{ translateX: reveal.get() * (LOGO_WIDTH + EDGE) }],
   }));
   const logoStyle = useAnimatedStyle(() => ({
-    opacity: logo.get(),
-    transform: [{ translateY: (1 - logo.get()) * 14 }],
+    opacity: Math.min(1, settle.get() * 2.5) * (1 - exit.get()),
+    transform: [{ scale: 0.96 + settle.get() * 0.04 + exit.get() * 0.03 }],
   }));
-  const taglineStyle = useAnimatedStyle(() => ({ opacity: tagline.get() }));
+  const overlayStyle = useAnimatedStyle(() => ({ opacity: 1 - exit.get() }));
 
   return (
     <Modal
@@ -122,31 +122,32 @@ export function Intro({ onShown, onDone }: { onShown: () => void; onDone: () => 
       animationType="none"
       statusBarTranslucent
       navigationBarTranslucent
-      onShow={start}
+      onShow={show}
       onRequestClose={() => finish(300)}>
       <Animated.View style={[styles.overlay, overlayStyle]}>
-        <Pressable accessibilityLabel="Skip intro" style={styles.fill} onPress={skip}>
-          <Animated.View style={[styles.content, contentStyle]}>
-            <Svg width={WIDTH} height={HEIGHT}>
-              {[leftRing, rightRing].map((animatedProps, index) => (
-                <AnimatedCircle
-                  key={index}
-                  cy={HEIGHT / 2}
-                  r={RADIUS}
-                  fill="none"
-                  stroke={colors.ink}
-                  strokeWidth={1.2}
-                  strokeLinecap="round"
-                  strokeDasharray={CIRCUMFERENCE}
-                  animatedProps={animatedProps}
+        <Pressable accessibilityLabel="Skip intro" style={styles.center} onPress={skip}>
+          <Animated.View style={[styles.logo, logoStyle]}>
+            {mode === 'text' ? (
+              <Text style={styles.text}>THE WELLNEST</Text>
+            ) : (
+              <Image
+                source={WORDMARK}
+                accessibilityLabel="The Wellnest"
+                contentFit="contain"
+                onLoad={() => setMode((m) => (m === 'waiting' ? 'image' : m))}
+                onError={() => setMode('text')}
+                style={styles.image}
+              />
+            )}
+            {/* Cream curtain with a soft leading edge, sliding off to the right. */}
+            <Animated.View style={[styles.curtain, curtainStyle]}>
+              {Array.from({ length: EDGE_STEPS }, (_, i) => (
+                <View
+                  key={i}
+                  style={[styles.edgeStep, { opacity: (i + 1) / (EDGE_STEPS + 1) }]}
                 />
               ))}
-            </Svg>
-            <Animated.View style={[styles.logo, logoStyle]}>
-              <Wordmark height={22} />
-            </Animated.View>
-            <Animated.View style={taglineStyle}>
-              <Eyebrow>Move · Feel · Connect</Eyebrow>
+              <View style={styles.curtainSolid} />
             </Animated.View>
           </Animated.View>
         </Pressable>
@@ -160,16 +161,41 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: colors.background,
   },
-  fill: {
-    flex: 1,
-  },
-  content: {
+  center: {
     flex: 1,
     alignItems: 'center',
     justifyContent: 'center',
-    gap: 18,
   },
   logo: {
-    marginTop: 10,
+    width: LOGO_WIDTH,
+    height: LOGO_HEIGHT,
+    justifyContent: 'center',
+  },
+  image: {
+    width: LOGO_WIDTH,
+    height: LOGO_HEIGHT,
+  },
+  text: {
+    fontFamily: fonts.light,
+    fontSize: 19,
+    letterSpacing: 5,
+    color: colors.ink,
+    textAlign: 'center',
+  },
+  curtain: {
+    position: 'absolute',
+    top: -6,
+    bottom: -6,
+    left: -EDGE,
+    width: LOGO_WIDTH + EDGE + 4,
+    flexDirection: 'row',
+  },
+  edgeStep: {
+    width: EDGE / EDGE_STEPS,
+    backgroundColor: colors.background,
+  },
+  curtainSolid: {
+    flex: 1,
+    backgroundColor: colors.background,
   },
 });
