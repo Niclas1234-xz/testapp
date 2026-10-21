@@ -1,7 +1,8 @@
 import { router } from 'expo-router';
-import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { StyleSheet, Text, View } from 'react-native';
 
 import { Icon } from '@/components/icon';
+import { PressableScale } from '@/components/motion';
 import { useNest } from '@/lib/nest-store';
 import { formatTime, getClassType, getInstructor, relativeDay, type Session } from '@/lib/schedule';
 import { colors, fonts, radius } from '@/lib/theme';
@@ -31,9 +32,9 @@ export function SessionCard({ session, showDay }: { session: Session; showDay?: 
   const status = availability(session, booked);
 
   return (
-    <Pressable
+    <PressableScale
       onPress={() => openSession(session.id)}
-      style={({ pressed }) => [styles.card, booked && styles.cardBooked, pressed && styles.pressed]}>
+      style={[styles.card, booked && styles.cardBooked]}>
       <View style={styles.timeColumn}>
         <Text style={styles.time}>{formatTime(session.start)}</Text>
         <Text style={styles.duration}>
@@ -57,7 +58,7 @@ export function SessionCard({ session, showDay }: { session: Session; showDay?: 
       </View>
 
       <Icon name="chevronRight" size={16} color={colors.lineStrong} />
-    </Pressable>
+    </PressableScale>
   );
 }
 
@@ -75,9 +76,6 @@ const styles = StyleSheet.create({
   cardBooked: {
     borderWidth: 1,
     borderColor: colors.olive,
-  },
-  pressed: {
-    opacity: 0.7,
   },
   timeColumn: {
     width: 58,

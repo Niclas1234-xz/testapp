@@ -1,12 +1,20 @@
 import { router, useLocalSearchParams } from 'expo-router';
 import { useState } from 'react';
 import { Modal, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
-import Animated, { FadeIn } from 'react-native-reanimated';
+import Animated, {
+  FadeIn,
+  FadeInDown,
+  interpolateColor,
+  SlideInDown,
+  useAnimatedStyle,
+  ZoomIn,
+} from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { Icon } from '@/components/icon';
+import { AnimatedPressable, PressableScale, useActiveProgress } from '@/components/motion';
 import { SessionCard } from '@/components/session-card';
-import { Button, Eyebrow } from '@/components/ui';
+import { Button, Chip, Eyebrow } from '@/components/ui';
 import { useNest } from '@/lib/nest-store';
 import {
   addDays,
@@ -89,17 +97,17 @@ export default function BookScreen() {
             <Eyebrow>Classes & events</Eyebrow>
             <Text style={styles.title}>Book</Text>
           </View>
-          <Pressable
+          <PressableScale
             accessibilityLabel="Filter"
             onPress={() => setFiltersOpen(true)}
             style={[styles.filterButton, activeFilters > 0 && styles.filterButtonActive]}>
             <Icon name="sliders" size={20} color={activeFilters > 0 ? colors.onDark : colors.ink} />
             {activeFilters > 0 && (
-              <View style={styles.badge}>
+              <Animated.View entering={ZoomIn.springify().damping(12)} style={styles.badge}>
                 <Text style={styles.badgeText}>{activeFilters}</Text>
-              </View>
+              </Animated.View>
             )}
-          </Pressable>
+          </PressableScale>
         </View>
 
         <View style={styles.calendar}>
@@ -128,62 +136,48 @@ export default function BookScreen() {
               const past = day.getTime() < todayStart;
               const hasClasses = sessions.some((s) => dayKey(s.start) === key && bookable(s));
               return (
-                <Pressable
+                <DayPill
                   key={key}
-                  disabled={past}
+                  date={day}
+                  selected={selected}
+                  isToday={key === todayKey}
+                  past={past}
+                  hasClasses={hasClasses}
                   onPress={() => setSelectedDay(key)}
-                  style={[styles.day, selected && styles.daySelected, past && styles.dayPast]}>
-                  <Text style={[styles.dayName, selected && styles.dayTextSelected]}>
-                    {weekdayShort(day).slice(0, 2)}
-                  </Text>
-                  <Text
-                    style={[
-                      styles.dayNumber,
-                      key === todayKey && styles.dayToday,
-                      selected && styles.dayTextSelected,
-                    ]}>
-                    {day.getDate()}
-                  </Text>
-                  <View
-                    style={[
-                      styles.dot,
-                      hasClasses && !past && { backgroundColor: selected ? colors.onDark : colors.lineStrong },
-                    ]}
-                  />
-                </Pressable>
+                />
               );
             })}
           </View>
         </View>
 
         <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.chips}>
-          {TYPE_CHIPS.map((chip) => {
-            const active = chip.id === type;
-            return (
-              <Pressable
-                key={chip.id}
-                onPress={() => router.setParams({ type: chip.id })}
-                style={[styles.chip, active && styles.chipActive]}>
-                <Text style={[styles.chipText, active && styles.chipTextActive]}>{chip.label}</Text>
-              </Pressable>
-            );
-          })}
+          {TYPE_CHIPS.map((chip) => (
+            <Chip
+              key={chip.id}
+              label={chip.label}
+              active={chip.id === type}
+              onPress={() => router.setParams({ type: chip.id })}
+            />
+          ))}
         </ScrollView>
 
-        <View style={styles.dayHeader}>
+        <Animated.View key={selectedDay} entering={FadeIn.duration(300)} style={styles.dayHeader}>
           <Text style={styles.dayTitle}>
             {selectedDay === todayKey ? 'Today' : formatDay(selectedDate).split(',')[0]}
           </Text>
           <Text style={styles.dayDate}>{formatDay(selectedDate).split(', ')[1]}</Text>
-        </View>
+        </Animated.View>
 
-        <Animated.View key={`${selectedDay}-${type}-${instructorId}-${location}`} entering={FadeIn.duration(250)} style={styles.list}>
-          {daySessions.map((session) => (
-            <SessionCard key={session.id} session={session} />
+        {/* Re-keyed on every change so the new list cascades in. */}
+        <View key={`${selectedDay}-${type}-${instructorId}-${location}`} style={styles.list}>
+          {daySessions.map((session, index) => (
+            <Animated.View key={session.id} entering={FadeInDown.delay(index * 60).duration(380)}>
+              <SessionCard session={session} />
+            </Animated.View>
           ))}
 
           {daySessions.length === 0 && (
-            <View style={styles.empty}>
+            <Animated.View entering={FadeIn.duration(300)} style={styles.empty}>
               <Text style={styles.emptyTitle}>No classes left</Text>
               <Text style={styles.emptyText}>
                 {activeFilters > 0 || type !== 'all'
@@ -198,9 +192,9 @@ export default function BookScreen() {
                   onPress={() => showDay(nextAvailable.start)}
                 />
               )}
-            </View>
+            </Animated.View>
           )}
-        </Animated.View>
+        </View>
       </ScrollView>
 
       <FilterSheet
@@ -212,6 +206,50 @@ export default function BookScreen() {
         onClose={() => setFiltersOpen(false)}
       />
     </View>
+  );
+}
+
+function DayPill({
+  date,
+  selected,
+  isToday,
+  past,
+  hasClasses,
+  onPress,
+}: {
+  date: Date;
+  selected: boolean;
+  isToday: boolean;
+  past: boolean;
+  hasClasses: boolean;
+  onPress: () => void;
+}) {
+  const progress = useActiveProgress(selected);
+  const pillStyle = useAnimatedStyle(() => ({
+    backgroundColor: interpolateColor(progress.get(), [0, 1], ['rgba(46, 43, 39, 0)', colors.ink]),
+    transform: [{ scale: 0.92 + progress.get() * 0.08 }],
+  }));
+  const nameStyle = useAnimatedStyle(() => ({
+    color: interpolateColor(progress.get(), [0, 1], [colors.muted, colors.onDark]),
+  }));
+  const numberStyle = useAnimatedStyle(() => ({
+    color: interpolateColor(progress.get(), [0, 1], [isToday ? colors.bronze : colors.ink, colors.onDark]),
+  }));
+  const dotStyle = useAnimatedStyle(() => ({
+    backgroundColor: interpolateColor(progress.get(), [0, 1], [colors.lineStrong, colors.onDark]),
+  }));
+
+  return (
+    <AnimatedPressable
+      accessibilityRole="button"
+      accessibilityState={{ selected, disabled: past }}
+      disabled={past}
+      onPress={onPress}
+      style={[styles.day, pillStyle, past && styles.dayPast]}>
+      <Animated.Text style={[styles.dayName, nameStyle]}>{weekdayShort(date).slice(0, 2)}</Animated.Text>
+      <Animated.Text style={[styles.dayNumber, numberStyle]}>{date.getDate()}</Animated.Text>
+      <Animated.View style={[styles.dot, hasClasses && !past ? dotStyle : null]} />
+    </AnimatedPressable>
   );
 }
 
@@ -227,14 +265,15 @@ function ArrowButton({
   onPress: () => void;
 }) {
   return (
-    <Pressable
+    <PressableScale
       accessibilityLabel={label}
       disabled={disabled}
       hitSlop={6}
+      scaleTo={0.85}
       onPress={onPress}
-      style={({ pressed }) => [styles.arrow, (disabled || pressed) && { opacity: disabled ? 0.25 : 0.6 }]}>
+      style={[styles.arrow, disabled && { opacity: 0.25 }]}>
       <Icon name={icon} size={16} />
-    </Pressable>
+    </PressableScale>
   );
 }
 
@@ -258,7 +297,9 @@ function FilterSheet({
   return (
     <Modal visible={visible} transparent animationType="fade" onRequestClose={onClose}>
       <Pressable style={styles.backdrop} onPress={onClose} />
-      <View style={[styles.sheet, { paddingBottom: insets.bottom + 20 }]}>
+      <Animated.View
+        entering={SlideInDown.springify().damping(20).stiffness(180)}
+        style={[styles.sheet, { paddingBottom: insets.bottom + 20 }]}>
         <View style={styles.grabber} />
         <Text style={styles.sheetTitle}>Filter</Text>
 
@@ -267,12 +308,12 @@ function FilterSheet({
           {instructors.map((instructor) => {
             const selected = instructor.id === instructorId;
             return (
-              <Pressable
+              <Chip
                 key={instructor.id}
+                label={instructor.name}
+                active={selected}
                 onPress={() => onInstructor(selected ? null : instructor.id)}
-                style={[styles.chip, selected && styles.chipActive]}>
-                <Text style={[styles.chipText, selected && styles.chipTextActive]}>{instructor.name}</Text>
-              </Pressable>
+              />
             );
           })}
         </View>
@@ -282,12 +323,12 @@ function FilterSheet({
           {locations.map((name) => {
             const selected = name === location;
             return (
-              <Pressable
+              <Chip
                 key={name}
+                label={name}
+                active={selected}
                 onPress={() => onLocation(selected ? null : name)}
-                style={[styles.chip, selected && styles.chipActive]}>
-                <Text style={[styles.chipText, selected && styles.chipTextActive]}>{name}</Text>
-              </Pressable>
+              />
             );
           })}
         </View>
@@ -303,7 +344,7 @@ function FilterSheet({
           />
           <Button label="Show classes" onPress={onClose} style={styles.flex} />
         </View>
-      </View>
+      </Animated.View>
     </Modal>
   );
 }
@@ -400,9 +441,6 @@ const styles = StyleSheet.create({
     borderRadius: radius.md,
     gap: 4,
   },
-  daySelected: {
-    backgroundColor: colors.ink,
-  },
   dayPast: {
     opacity: 0.3,
   },
@@ -419,12 +457,6 @@ const styles = StyleSheet.create({
     color: colors.ink,
     fontVariant: ['tabular-nums'],
   },
-  dayToday: {
-    color: colors.bronze,
-  },
-  dayTextSelected: {
-    color: colors.onDark,
-  },
   dot: {
     width: 4,
     height: 4,
@@ -434,27 +466,6 @@ const styles = StyleSheet.create({
     marginTop: 16,
     paddingHorizontal: 16,
     gap: 8,
-  },
-  chip: {
-    height: 38,
-    paddingHorizontal: 16,
-    borderRadius: radius.pill,
-    borderWidth: 1,
-    borderColor: colors.line,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  chipActive: {
-    backgroundColor: colors.ink,
-    borderColor: colors.ink,
-  },
-  chipText: {
-    fontFamily: fonts.medium,
-    fontSize: 13,
-    color: colors.inkSoft,
-  },
-  chipTextActive: {
-    color: colors.onDark,
   },
   dayHeader: {
     marginTop: 28,

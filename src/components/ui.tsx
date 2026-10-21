@@ -1,7 +1,9 @@
 import type { ReactNode } from 'react';
-import { Pressable, StyleSheet, Text, View, type StyleProp, type ViewStyle } from 'react-native';
+import { ActivityIndicator, StyleSheet, Text, View, type StyleProp, type ViewStyle } from 'react-native';
+import Animated, { interpolateColor, useAnimatedStyle } from 'react-native-reanimated';
 
 import { Icon, type IconName } from '@/components/icon';
+import { AnimatedPressable, PressableScale, useActiveProgress } from '@/components/motion';
 import { initials } from '@/lib/schedule';
 import { colors, fonts, radius } from '@/lib/theme';
 
@@ -21,6 +23,8 @@ type ButtonProps = {
   size?: 'md' | 'sm';
   icon?: IconName;
   disabled?: boolean;
+  /** Shows a spinner instead of the label and ignores presses. */
+  loading?: boolean;
   style?: StyleProp<ViewStyle>;
 };
 
@@ -31,27 +35,56 @@ export function Button({
   size = 'md',
   icon,
   disabled,
+  loading,
   style,
 }: ButtonProps) {
   const palette = buttonColors[variant];
   return (
-    <Pressable
+    <PressableScale
       accessibilityRole="button"
       onPress={onPress}
-      disabled={disabled}
-      style={({ pressed }) => [
+      disabled={disabled || loading}
+      style={[
         styles.button,
         size === 'sm' && styles.buttonSmall,
         { backgroundColor: palette.background, borderColor: palette.border },
-        (pressed || disabled) && { opacity: disabled ? 0.4 : 0.75 },
+        disabled && { opacity: 0.4 },
         style,
       ]}>
-      <Text
-        style={[styles.buttonLabel, size === 'sm' && styles.buttonLabelSmall, { color: palette.text }]}>
-        {label}
-      </Text>
-      {icon && <Icon name={icon} size={size === 'sm' ? 14 : 18} color={palette.text} />}
-    </Pressable>
+      {loading ? (
+        <ActivityIndicator color={palette.text} />
+      ) : (
+        <>
+          <Text
+            style={[styles.buttonLabel, size === 'sm' && styles.buttonLabelSmall, { color: palette.text }]}>
+            {label}
+          </Text>
+          {icon && <Icon name={icon} size={size === 'sm' ? 14 : 18} color={palette.text} />}
+        </>
+      )}
+    </PressableScale>
+  );
+}
+
+/** Selectable pill whose fill fades between states. */
+export function Chip({ label, active, onPress }: { label: string; active: boolean; onPress: () => void }) {
+  const progress = useActiveProgress(active);
+  const containerStyle = useAnimatedStyle(() => ({
+    backgroundColor: interpolateColor(progress.get(), [0, 1], ['rgba(46, 43, 39, 0)', colors.ink]),
+    borderColor: interpolateColor(progress.get(), [0, 1], [colors.line, colors.ink]),
+  }));
+  const textStyle = useAnimatedStyle(() => ({
+    color: interpolateColor(progress.get(), [0, 1], [colors.inkSoft, colors.onDark]),
+  }));
+
+  return (
+    <AnimatedPressable
+      accessibilityRole="button"
+      accessibilityState={{ selected: active }}
+      onPress={onPress}
+      style={[styles.chip, containerStyle]}>
+      <Animated.Text style={[styles.chipText, textStyle]}>{label}</Animated.Text>
+    </AnimatedPressable>
   );
 }
 
@@ -93,6 +126,18 @@ const styles = StyleSheet.create({
   buttonLabelSmall: {
     fontSize: 10.5,
     letterSpacing: 1.6,
+  },
+  chip: {
+    height: 38,
+    paddingHorizontal: 16,
+    borderRadius: radius.pill,
+    borderWidth: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  chipText: {
+    fontFamily: fonts.medium,
+    fontSize: 13,
   },
   eyebrow: {
     fontFamily: fonts.medium,

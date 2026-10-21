@@ -3,12 +3,22 @@ import { createContext, use, useEffect, useState, type ReactNode } from 'react';
 // In-memory demo state: bookings and login are lost when the app reloads.
 type User = { name: string; email: string };
 
+export type PaymentMethod = 'credits' | 'card';
+export type Booking = { sessionId: string; method: PaymentMethod };
+
+// Demo membership: every member starts with this many credits.
+export const MEMBERSHIP_CREDITS = 10;
+export const DEMO_CARD = 'Visa •••• 4242';
+
 type NestState = {
   /** Current time, refreshed every minute so past classes grey out on their own. */
   now: number;
+  bookings: Booking[];
   bookedIds: string[];
+  creditsLeft: number;
   isBooked: (sessionId: string) => boolean;
-  book: (sessionId: string) => void;
+  bookingFor: (sessionId: string) => Booking | undefined;
+  book: (sessionId: string, method: PaymentMethod) => void;
   cancel: (sessionId: string) => void;
   user: User | null;
   logIn: (email: string) => void;
@@ -23,7 +33,7 @@ function nameFromEmail(email: string) {
 }
 
 export function NestProvider({ children }: { children: ReactNode }) {
-  const [bookedIds, setBookedIds] = useState<string[]>([]);
+  const [bookings, setBookings] = useState<Booking[]>([]);
   const [user, setUser] = useState<User | null>(null);
   const [now, setNow] = useState(() => Date.now());
 
@@ -32,13 +42,21 @@ export function NestProvider({ children }: { children: ReactNode }) {
     return () => clearInterval(timer);
   }, []);
 
+  const bookingFor = (sessionId: string) => bookings.find((b) => b.sessionId === sessionId);
+
   const state: NestState = {
     now,
-    bookedIds,
-    isBooked: (sessionId) => bookedIds.includes(sessionId),
-    book: (sessionId) =>
-      setBookedIds((ids) => (ids.includes(sessionId) ? ids : [...ids, sessionId])),
-    cancel: (sessionId) => setBookedIds((ids) => ids.filter((id) => id !== sessionId)),
+    bookings,
+    bookedIds: bookings.map((b) => b.sessionId),
+    // Cancelling removes the booking, which hands its credit back.
+    creditsLeft: MEMBERSHIP_CREDITS - bookings.filter((b) => b.method === 'credits').length,
+    isBooked: (sessionId) => !!bookingFor(sessionId),
+    bookingFor,
+    book: (sessionId, method) =>
+      setBookings((current) =>
+        current.some((b) => b.sessionId === sessionId) ? current : [...current, { sessionId, method }]
+      ),
+    cancel: (sessionId) => setBookings((current) => current.filter((b) => b.sessionId !== sessionId)),
     user,
     logIn: (email) => setUser({ email, name: nameFromEmail(email.trim()) }),
     logOut: () => setUser(null),

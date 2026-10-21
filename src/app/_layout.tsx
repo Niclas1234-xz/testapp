@@ -25,11 +25,11 @@ const theme: Theme = {
   },
 };
 
-const sheetOptions = {
-  presentation: 'formSheet',
-  sheetGrabberVisible: true,
-  sheetCornerRadius: 28,
-  contentStyle: { backgroundColor: colors.surface },
+// Full modals instead of formSheets: their layout (scroll area plus a fixed footer) behaves the
+// same on iOS and Android.
+const modalOptions = {
+  presentation: 'modal',
+  contentStyle: { backgroundColor: colors.background },
 } as const;
 
 export default function RootLayout() {
@@ -51,14 +51,8 @@ export default function RootLayout() {
       <NestProvider>
         <Stack screenOptions={{ headerShown: false }}>
           <Stack.Screen name="(tabs)" />
-          <Stack.Screen
-            name="session/[id]"
-            options={{ ...sheetOptions, sheetAllowedDetents: [0.92] }}
-          />
-          <Stack.Screen
-            name="instructor/[id]"
-            options={{ ...sheetOptions, sheetAllowedDetents: [0.7, 0.92] }}
-          />
+          <Stack.Screen name="session/[id]" options={modalOptions} />
+          <Stack.Screen name="instructor/[id]" options={modalOptions} />
         </Stack>
         <StatusBar style="dark" />
       </NestProvider>

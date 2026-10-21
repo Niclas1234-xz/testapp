@@ -1,11 +1,12 @@
 import { router } from 'expo-router';
 import type { ReactNode } from 'react';
 import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
-import Animated, { FadeInDown } from 'react-native-reanimated';
+import Animated, { FadeInDown, LinearTransition } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Svg, { Circle } from 'react-native-svg';
 
 import { Icon } from '@/components/icon';
+import { PressableScale } from '@/components/motion';
 import { SessionCard } from '@/components/session-card';
 import { Button, Eyebrow } from '@/components/ui';
 import { useNest } from '@/lib/nest-store';
@@ -31,7 +32,7 @@ export default function HomeScreen() {
       style={styles.screen}
       contentContainerStyle={{ paddingTop: insets.top + 12, paddingBottom: insets.bottom + TAB_BAR_SPACE }}
       showsVerticalScrollIndicator={false}>
-      <View style={styles.topBar}>
+      <Animated.View entering={FadeInDown.duration(500)} style={styles.topBar}>
         <View>
           <Text style={styles.greeting}>
             {greeting(now)}
@@ -39,15 +40,15 @@ export default function HomeScreen() {
           </Text>
           <Text style={styles.wordmark}>THE WELLNEST</Text>
         </View>
-        <Pressable
+        <PressableScale
           accessibilityLabel="Profile"
           onPress={() => router.navigate('/profile')}
           style={styles.roundButton}>
           <Icon name="user" size={18} />
-        </Pressable>
-      </View>
+        </PressableScale>
+      </Animated.View>
 
-      <Animated.View entering={FadeInDown.duration(600)} style={styles.hero}>
+      <Animated.View entering={FadeInDown.delay(80).duration(600)} style={styles.hero}>
         <Svg width={240} height={240} style={styles.heroRings}>
           <Circle cx={92} cy={120} r={84} stroke="rgba(246,241,234,0.16)" strokeWidth={1} fill="none" />
           <Circle cx={148} cy={120} r={84} stroke="rgba(246,241,234,0.16)" strokeWidth={1} fill="none" />
@@ -64,13 +65,14 @@ export default function HomeScreen() {
       </Animated.View>
 
       {nextBooking && (
-        <Section title="Your next class">
+        <Section title="Your next class" delay={160}>
           <SessionCard session={nextBooking} showDay />
         </Section>
       )}
 
       <Section
         title="Up next"
+        delay={nextBooking ? 240 : 160}
         action={
           <Pressable hitSlop={10} onPress={() => router.navigate('/book')} style={styles.link}>
             <Text style={styles.linkText}>All classes</Text>
@@ -79,25 +81,28 @@ export default function HomeScreen() {
         }>
         <View style={styles.list}>
           {upNext.map((session) => (
-            <SessionCard key={session.id} session={session} showDay />
+            <Animated.View key={session.id} layout={LinearTransition}>
+              <SessionCard session={session} showDay />
+            </Animated.View>
           ))}
         </View>
       </Section>
 
-      <Section title="Explore">
+      <Section title="Explore" delay={nextBooking ? 320 : 240}>
         <View style={styles.tiles}>
           {classTypes
             .filter((type) => type.id !== 'event')
             .map((type) => (
-              <Pressable
+              <PressableScale
                 key={type.id}
+                scaleTo={0.94}
                 onPress={() => router.navigate({ pathname: '/classes', params: { focus: type.id } })}
-                style={({ pressed }) => [styles.tile, pressed && styles.pressed]}>
+                style={styles.tile}>
                 <Icon name={type.icon} size={30} color={type.color} strokeWidth={1.1} />
                 <Text style={styles.tileText} numberOfLines={1}>
                   {type.name}
                 </Text>
-              </Pressable>
+              </PressableScale>
             ))}
         </View>
       </Section>
@@ -105,15 +110,28 @@ export default function HomeScreen() {
   );
 }
 
-function Section({ title, action, children }: { title: string; action?: ReactNode; children: ReactNode }) {
+function Section({
+  title,
+  action,
+  delay = 0,
+  children,
+}: {
+  title: string;
+  action?: ReactNode;
+  delay?: number;
+  children: ReactNode;
+}) {
   return (
-    <View style={styles.section}>
+    <Animated.View
+      entering={FadeInDown.delay(delay).duration(550)}
+      layout={LinearTransition}
+      style={styles.section}>
       <View style={styles.sectionHeader}>
         <Text style={styles.sectionTitle}>{title}</Text>
         {action}
       </View>
       {children}
-    </View>
+    </Animated.View>
   );
 }
 
@@ -121,9 +139,6 @@ const styles = StyleSheet.create({
   screen: {
     flex: 1,
     backgroundColor: colors.background,
-  },
-  pressed: {
-    opacity: 0.7,
   },
   topBar: {
     paddingHorizontal: 24,

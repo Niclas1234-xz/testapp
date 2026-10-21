@@ -1,7 +1,9 @@
 import { router, useLocalSearchParams } from 'expo-router';
 import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import Animated, { FadeInDown } from 'react-native-reanimated';
 
 import { Icon } from '@/components/icon';
+import { ModalHeader } from '@/components/modal-header';
 import { Avatar, Eyebrow } from '@/components/ui';
 import { useNest } from '@/lib/nest-store';
 import {
@@ -22,44 +24,53 @@ export default function InstructorSheet() {
     .slice(0, 4);
 
   return (
-    <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
-      <View style={styles.header}>
-        <Avatar name={instructor.name} size={88} />
-        <Text style={styles.name}>{instructor.name}</Text>
-        <Eyebrow>{instructor.role}</Eyebrow>
-      </View>
+    <View style={styles.screen}>
+      <ModalHeader title="Instructor" />
+      <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
+        <Animated.View entering={FadeInDown.duration(400)} style={styles.header}>
+          <Avatar name={instructor.name} size={88} tint={colors.surface} />
+          <Text style={styles.name}>{instructor.name}</Text>
+          <Eyebrow>{instructor.role}</Eyebrow>
+        </Animated.View>
 
-      <Text style={styles.bio}>{instructor.bio}</Text>
+        <Animated.Text entering={FadeInDown.delay(80).duration(400)} style={styles.bio}>
+          {instructor.bio}
+        </Animated.Text>
 
-      <Text style={styles.sectionTitle}>Upcoming classes</Text>
-      <View style={styles.list}>
-        {upcoming.map((session) => {
-          const type = getClassType(session.typeId);
-          return (
-            <Pressable
-              key={session.id}
-              onPress={() => router.push({ pathname: '/session/[id]', params: { id: session.id } })}
-              style={({ pressed }) => [styles.row, pressed && { opacity: 0.6 }]}>
-              <View style={[styles.dot, { backgroundColor: type.color }]} />
-              <View style={styles.flex}>
-                <Text style={styles.rowTitle}>{session.title}</Text>
-                <Text style={styles.rowMeta}>
-                  {formatDay(session.start)} · {formatTime(session.start)}
-                </Text>
-              </View>
-              <Icon name="chevronRight" size={16} color={colors.muted} />
-            </Pressable>
-          );
-        })}
-      </View>
-    </ScrollView>
+        <Text style={styles.sectionTitle}>Upcoming classes</Text>
+        <Animated.View entering={FadeInDown.delay(160).duration(400)} style={styles.list}>
+          {upcoming.map((session) => {
+            const type = getClassType(session.typeId);
+            return (
+              <Pressable
+                key={session.id}
+                onPress={() => router.push({ pathname: '/session/[id]', params: { id: session.id } })}
+                style={({ pressed }) => [styles.row, pressed && { opacity: 0.6 }]}>
+                <View style={[styles.dot, { backgroundColor: type.color }]} />
+                <View style={styles.flex}>
+                  <Text style={styles.rowTitle}>{session.title}</Text>
+                  <Text style={styles.rowMeta}>
+                    {formatDay(session.start)} · {formatTime(session.start)}
+                  </Text>
+                </View>
+                <Icon name="chevronRight" size={16} color={colors.muted} />
+              </Pressable>
+            );
+          })}
+        </Animated.View>
+      </ScrollView>
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
+  screen: {
+    flex: 1,
+    backgroundColor: colors.background,
+  },
   content: {
     padding: 24,
-    paddingTop: 36,
+    paddingTop: 12,
     paddingBottom: 48,
   },
   flex: {
@@ -94,7 +105,7 @@ const styles = StyleSheet.create({
   },
   list: {
     borderRadius: radius.md,
-    backgroundColor: colors.background,
+    backgroundColor: colors.surface,
     paddingHorizontal: 16,
   },
   row: {

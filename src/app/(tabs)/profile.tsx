@@ -2,7 +2,7 @@ import { router } from 'expo-router';
 import * as WebBrowser from 'expo-web-browser';
 import { useState } from 'react';
 import { Alert, Pressable, ScrollView, StyleSheet, Switch, Text, TextInput, View } from 'react-native';
-import Animated, { FadeIn, FadeOut, LinearTransition } from 'react-native-reanimated';
+import Animated, { FadeIn, FadeInDown, FadeOut, LinearTransition } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Svg, { Circle } from 'react-native-svg';
 
@@ -14,11 +14,10 @@ import { formatTime, getInstructor, getSession, weekdayShort, type Session } fro
 import { colors, fonts, radius, TAB_BAR_SPACE } from '@/lib/theme';
 
 const WEBSITE = 'https://www.thewellnest.ch';
-const MEMBERSHIP_CREDITS = 10;
 
 export default function ProfileScreen() {
   const insets = useSafeAreaInsets();
-  const { user, bookedIds, logOut, now } = useNest();
+  const { user, bookedIds, creditsLeft, logOut, now } = useNest();
   const [newsletter, setNewsletter] = useState(false);
 
   const bookings = bookedIds
@@ -60,7 +59,7 @@ export default function ProfileScreen() {
       </View>
 
       {user ? (
-        <Animated.View entering={FadeIn.duration(400)} style={styles.member}>
+        <Animated.View key="member" entering={FadeInDown.duration(450)} style={styles.member}>
           <Svg width={220} height={220} style={styles.memberRings}>
             <Circle cx={80} cy={110} r={76} stroke="rgba(246,241,234,0.14)" fill="none" />
             <Circle cx={140} cy={110} r={76} stroke="rgba(246,241,234,0.14)" fill="none" />
@@ -69,7 +68,7 @@ export default function ProfileScreen() {
           <Text style={styles.memberName}>{user.email}</Text>
           <View style={styles.memberStats}>
             <View>
-              <Text style={styles.memberValue}>{Math.max(MEMBERSHIP_CREDITS - bookedIds.length, 0)}</Text>
+              <Text style={styles.memberValue}>{creditsLeft}</Text>
               <Text style={styles.memberLabel}>Credits left</Text>
             </View>
             <View>
@@ -83,10 +82,15 @@ export default function ProfileScreen() {
           </View>
         </Animated.View>
       ) : (
-        <LoginCard />
+        <Animated.View key="login" entering={FadeInDown.duration(450)} exiting={FadeOut.duration(200)}>
+          <LoginCard />
+        </Animated.View>
       )}
 
-      <View style={styles.section}>
+      <Animated.View
+        entering={FadeInDown.delay(100).duration(450)}
+        layout={LinearTransition}
+        style={styles.section}>
         <Text style={styles.sectionTitle}>My bookings</Text>
         {bookings.length === 0 ? (
           <View style={styles.empty}>
@@ -107,9 +111,12 @@ export default function ProfileScreen() {
             ))}
           </View>
         )}
-      </View>
+      </Animated.View>
 
-      <View style={styles.section}>
+      <Animated.View
+        entering={FadeInDown.delay(180).duration(450)}
+        layout={LinearTransition}
+        style={styles.section}>
         <Text style={styles.sectionTitle}>Settings</Text>
         <View style={styles.list}>
           <View style={styles.settingRow}>
@@ -138,7 +145,7 @@ export default function ProfileScreen() {
             </Pressable>
           ))}
         </View>
-      </View>
+      </Animated.View>
     </ScrollView>
   );
 }

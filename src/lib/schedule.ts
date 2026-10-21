@@ -202,6 +202,11 @@ export function formatDay(date: Date) {
   return `${WEEKDAYS[date.getDay()]}, ${date.getDate()} ${MONTHS[date.getMonth()]}`;
 }
 
+// e.g. "Thu, 22 Oct"
+export function formatShortDay(date: Date) {
+  return `${WEEKDAYS[date.getDay()].slice(0, 3)}, ${date.getDate()} ${MONTHS[date.getMonth()].slice(0, 3)}`;
+}
+
 export function formatMonth(date: Date) {
   return `${MONTHS[date.getMonth()]} ${date.getFullYear()}`;
 }

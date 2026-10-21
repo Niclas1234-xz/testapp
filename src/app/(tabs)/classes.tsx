@@ -1,10 +1,17 @@
 import { router, useLocalSearchParams } from 'expo-router';
 import { useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
-import Animated, { FadeIn, FadeInDown, LinearTransition } from 'react-native-reanimated';
+import Animated, {
+  FadeIn,
+  FadeInDown,
+  FadeOut,
+  LinearTransition,
+  useAnimatedStyle,
+} from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { Icon } from '@/components/icon';
+import { useActiveProgress } from '@/components/motion';
 import { Button, Eyebrow } from '@/components/ui';
 import { classTypes, type ClassType } from '@/lib/schedule';
 import { colors, fonts, radius, TAB_BAR_SPACE } from '@/lib/theme';
@@ -30,7 +37,10 @@ export default function ClassesScreen() {
         {classTypes
           .filter((type) => type.id !== 'event')
           .map((type, index) => (
-            <Animated.View key={type.id} entering={FadeInDown.delay(index * 90).duration(500)}>
+            <Animated.View
+              key={type.id}
+              entering={FadeInDown.delay(index * 90).duration(500)}
+              layout={cardLayout}>
               {/* Remount when opened from the home screen so the chosen class starts expanded. */}
               <ClassCard key={focus ?? 'none'} type={type} initiallyOpen={focus === type.id} />
             </Animated.View>
@@ -40,11 +50,18 @@ export default function ClassesScreen() {
   );
 }
 
+// Cards below an expanding card slide down instead of jumping.
+const cardLayout = LinearTransition.springify().damping(22).stiffness(200);
+
 function ClassCard({ type, initiallyOpen }: { type: ClassType; initiallyOpen: boolean }) {
   const [open, setOpen] = useState(initiallyOpen);
+  const progress = useActiveProgress(open, 300);
+  const chevronStyle = useAnimatedStyle(() => ({
+    transform: [{ rotate: `${progress.get() * 180}deg` }],
+  }));
 
   return (
-    <Animated.View layout={LinearTransition.duration(250)} style={styles.card}>
+    <Animated.View layout={cardLayout} style={styles.card}>
       <View style={styles.cardHeader}>
         <View style={styles.iconCircle}>
           <Icon name={type.icon} size={30} color={type.color} strokeWidth={1.1} />
@@ -67,7 +84,10 @@ function ClassCard({ type, initiallyOpen }: { type: ClassType; initiallyOpen: bo
       </View>
 
       {open && (
-        <Animated.View entering={FadeIn.duration(300)} style={styles.more}>
+        <Animated.View
+          entering={FadeIn.delay(120).duration(300)}
+          exiting={FadeOut.duration(150)}
+          style={styles.more}>
           {type.description.map((paragraph) => (
             <Text key={paragraph} style={styles.paragraph}>
               {paragraph}
@@ -81,9 +101,9 @@ function ClassCard({ type, initiallyOpen }: { type: ClassType; initiallyOpen: bo
       <View style={styles.cardFooter}>
         <Pressable hitSlop={10} onPress={() => setOpen(!open)} style={styles.toggle}>
           <Text style={styles.toggleText}>{open ? 'Less' : 'More'}</Text>
-          <View style={{ transform: [{ rotate: open ? '180deg' : '0deg' }] }}>
+          <Animated.View style={chevronStyle}>
             <Icon name="chevronDown" size={12} color={colors.bronze} strokeWidth={1.8} />
-          </View>
+          </Animated.View>
         </Pressable>
         <Button
           label="See times"
