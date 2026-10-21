@@ -23,7 +23,6 @@ import {
   formatDay,
   formatMonth,
   instructors,
-  locations,
   getSchedule,
   scheduleWeeks,
   weekdayShort,
@@ -48,7 +47,6 @@ export default function BookScreen() {
 
   const [pickedDay, setPickedDay] = useState(todayKey);
   const [instructorId, setInstructorId] = useState<string | null>(null);
-  const [location, setLocation] = useState<string | null>(null);
   const [filtersOpen, setFiltersOpen] = useState(false);
 
   const [stripWidth, setStripWidth] = useState(0);
@@ -70,7 +68,7 @@ export default function BookScreen() {
   );
   const weekStart = weeks[week][0];
   const days = weeks[week];
-  const activeFilters = (instructorId ? 1 : 0) + (location ? 1 : 0);
+  const activeFilters = instructorId ? 1 : 0;
 
   // Keep the swipeable strip on the week of the selected day (arrows, "Show …", midnight).
   useEffect(() => {
@@ -82,8 +80,7 @@ export default function BookScreen() {
   const bookable = (session: Session) =>
     session.start.getTime() > now &&
     (type === 'all' || session.typeId === type) &&
-    (!instructorId || session.instructorId === instructorId) &&
-    (!location || session.location === location);
+    (!instructorId || session.instructorId === instructorId);
 
   const daySessions = sessions.filter(
     (session) => dayKey(session.start) === selectedDay && bookable(session)
@@ -221,7 +218,7 @@ export default function BookScreen() {
         </Animated.View>
 
         {/* Re-keyed on every change so the new list cascades in. */}
-        <View key={`${selectedDay}-${type}-${instructorId}-${location}`} style={styles.list}>
+        <View key={`${selectedDay}-${type}-${instructorId}`} style={styles.list}>
           {daySessions.map((session, index) => (
             <Animated.View key={session.id} entering={FadeInDown.delay(index * 60).duration(380)}>
               <SessionCard session={session} />
@@ -252,9 +249,7 @@ export default function BookScreen() {
       <FilterSheet
         visible={filtersOpen}
         instructorId={instructorId}
-        location={location}
         onInstructor={setInstructorId}
-        onLocation={setLocation}
         onClose={() => setFiltersOpen(false)}
       />
     </Animated.View>
@@ -341,16 +336,12 @@ function ArrowButton({
 function FilterSheet({
   visible,
   instructorId,
-  location,
   onInstructor,
-  onLocation,
   onClose,
 }: {
   visible: boolean;
   instructorId: string | null;
-  location: string | null;
   onInstructor: (id: string | null) => void;
-  onLocation: (location: string | null) => void;
   onClose: () => void;
 }) {
   const insets = useSafeAreaInsets();
@@ -379,30 +370,8 @@ function FilterSheet({
           })}
         </View>
 
-        <Text style={styles.sheetLabel}>Location</Text>
-        <View style={styles.options}>
-          {locations.map((name) => {
-            const selected = name === location;
-            return (
-              <Chip
-                key={name}
-                label={name}
-                active={selected}
-                onPress={() => onLocation(selected ? null : name)}
-              />
-            );
-          })}
-        </View>
-
         <View style={styles.sheetButtons}>
-          <Button
-            label="Reset"
-            variant="outline"
-            onPress={() => {
-              onInstructor(null);
-              onLocation(null);
-            }}
-          />
+          <Button label="Reset" variant="outline" onPress={() => onInstructor(null)} />
           <Button label="Show classes" onPress={onClose} style={styles.flex} />
         </View>
       </Animated.View>

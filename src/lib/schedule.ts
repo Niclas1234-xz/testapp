@@ -129,40 +129,30 @@ export type Instructor = {
   bio: string;
 };
 
+// The studio's teachers. Roles and bios are placeholders until the real ones are written.
 export const instructors: Instructor[] = [
   {
-    id: 'giorgia',
-    name: "Giorgia D'Amico",
-    role: 'Sculpt & Pilates',
-    bio: 'Giorgia builds every class around the music. Expect a strong rhythm, clear cues and a playlist you will want to save.',
+    id: 'laura',
+    name: 'Laura',
+    role: 'Instructor',
+    bio: 'Laura teaches at The Wellnest in Luzern. A longer bio is coming soon.',
   },
   {
-    id: 'lea',
-    name: 'Lea Wahl',
-    role: 'Mat Pilates',
-    bio: 'Lea teaches Pilates with precision and calm. Her classes are slow enough to feel every muscle and steady enough to keep you working.',
+    id: 'fabia',
+    name: 'Fabia',
+    role: 'Instructor',
+    bio: 'Fabia teaches at The Wellnest in Luzern. A longer bio is coming soon.',
   },
   {
-    id: 'mila',
-    name: 'Mila Rossi',
-    role: 'Yoga & Breathwork',
-    bio: 'Mila guides breath-led flows that leave space to soften. Her evening classes are the best way to land after a long day.',
-  },
-  {
-    id: 'noah',
-    name: 'Noah Keller',
-    role: 'Sculpt',
-    bio: 'Noah brings energy and a sense of humour. His Sculpt classes build, burn and finish with a long, well-earned release.',
-  },
-  {
-    id: 'elena',
-    name: 'Elena Baumann',
-    role: 'Pilates & Yoga',
-    bio: 'Elena combines alignment-focused Pilates with mindful yoga. She meets everyone where they are, beginners included.',
+    id: 'elina',
+    name: 'Elina',
+    role: 'Instructor',
+    bio: 'Elina teaches at The Wellnest in Luzern. A longer bio is coming soon.',
   },
 ];
 
-export const locations = ['Luzern', 'Zürich'] as const;
+// Only one studio for now.
+export const locations = ['Luzern'] as const;
 export type Location = (typeof locations)[number];
 
 export type Session = {
@@ -286,8 +276,9 @@ function buildSchedule(firstDay: Date) {
         id: `${dayKey(day)}-${slot}`,
         typeId,
         title: classTypes.find((type) => type.id === typeId)!.name,
-        instructorId: instructors[(seed * 3 + dayNo) % instructors.length].id,
-        location: locations[seed % 3 === 0 ? 1 : 0],
+        // Rotate through the teachers by slot and by day so each day mixes them.
+        instructorId: instructors[(slot + dayNo) % instructors.length].id,
+        location: 'Luzern',
         start: at(day, time),
         durationMin: slot === 0 ? 45 : 50,
         capacity,

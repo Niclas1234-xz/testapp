@@ -13,6 +13,7 @@ import { openSession } from '@/components/session-card';
 import { Button, Eyebrow } from '@/components/ui';
 import { useNest } from '@/lib/nest-store';
 import { formatTime, getInstructor, getSession, weekdayShort, type Session } from '@/lib/schedule';
+import { openStudioInMaps } from '@/lib/studio';
 import { colors, fonts, radius, TAB_BAR_SPACE } from '@/lib/theme';
 
 const WEBSITE = 'https://www.thewellnest.ch';
@@ -35,6 +36,7 @@ export default function ProfileScreen() {
           { icon: 'card' as const, label: 'Payment methods', onPress: comingSoon },
         ]
       : []),
+    { icon: 'pin', label: 'Location', onPress: openStudioInMaps },
     {
       icon: 'rings',
       label: 'About The Wellnest',
