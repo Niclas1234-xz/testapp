@@ -1,51 +1,38 @@
-# 🚗 Autoerkenner
+# 🪺 The Wellnest
 
-Expo-App: Foto von einem Auto machen (oder aus der Galerie wählen). Die KI (Claude) sagt dir,
-**welches Auto es ist** (Marke, Modell, Generation, Baujahre) und schätzt den **Preis in CHF**
-(Neupreis und heutigen Gebrauchtwert).
+Expo-App für [thewellnest.ch](https://www.thewellnest.ch): Startseite, Kursübersicht und ein
+Buchungssystem im Stil der Webseite (Creme, Bronze, Oliv, Montserrat). Es ist ein **Klick-Prototyp**:
+Buchungen und Login funktionieren nur lokal in der App und gehen beim Neuladen verloren.
 
-## So funktioniert's
+## Screens
 
-```
-App (Kamera/Galerie) ──► Bild auf max. 1280 px verkleinern (JPEG)
-                     ──► POST /api/recognize  (Expo Router API-Route, läuft auf dem Server)
-                     ──► Claude analysiert das Bild und gibt strukturiertes JSON zurück
-                     ◄── Anzeige: Modell, Sicherheit, Preise, Merkmale, Alternativen
-```
+| Tab | Datei | Inhalt |
+| --- | --- | --- |
+| Home | `src/app/(tabs)/index.tsx` | Hero, Laufband „THE NOW · THE NATURE …", nächste Kurse, About, Presence/Ease/Connection, Kurse, Newsletter |
+| Book | `src/app/(tabs)/book.tsx` | Woche wählen, Tagesleiste, „Show all"/„Today", Filter nach Instructor und Location, Kursart-Tabs, Kurskarten |
+| Classes | `src/app/(tabs)/classes.tsx` | Signature Class (Sculpt), Classic Pilates, Yoga mit Beschreibung und „Book now" |
+| Nest | `src/app/(tabs)/profile.tsx` | Demo-Login, Mitgliedskarte mit Credits, „My bookings", Einstellungen |
 
-- `src/app/index.tsx`: Scan-Screen (Kamera, Galerie, Ergebnis-Karte)
-- `src/app/api/recognize+api.ts`: Server-Route, ruft die Claude API auf (`claude-opus-5-5`)
-- `src/lib/car-schema.ts`: Schema der KI-Antwort (Zod, wird als Structured Output erzwungen)
+Dazu zwei Sheets: `src/app/session/[id].tsx` (Kursdetails, buchen, stornieren, Warteliste) und
+`src/app/instructor/[id].tsx` (Bio und nächste Kurse der Trainerin oder des Trainers).
 
-Der API-Key bleibt auf dem Server und landet **nicht** in der App.
+- `src/lib/schedule.ts`: Kursarten, Instructors, Standorte und der generierte Stundenplan (4 Wochen ab heute)
+- `src/lib/nest-store.tsx`: Buchungen und Login (nur im Speicher)
+- `src/lib/theme.ts`: Farben und Schriften
+- `src/components/`: Icons (SVG-Linien wie auf der Webseite), Buttons, Kurskarte, Laufband
 
 ## Starten
 
 ```bash
 npm install
-cp .env.example .env      # ANTHROPIC_API_KEY eintragen (https://console.anthropic.com)
 npx expo start
 ```
 
-Dann den QR-Code mit **Expo Go** scannen (Handy und Rechner im selben WLAN). Im Entwicklungsmodus
-leitet Expo die Anfragen an `/api/recognize` automatisch an den Dev-Server auf deinem Rechner weiter.
+Dann den QR-Code mit **Expo Go** scannen (Handy und Rechner im selben WLAN).
+Im Browser geht es mit `npx expo start --web`.
 
-Im Browser testen: `npx expo start --web` (dort öffnet „Foto aufnehmen" den Datei-Dialog).
+## Nächste Schritte
 
-## Produktion
-
-Für einen echten Build muss die API-Route irgendwo gehostet sein, z.B. mit EAS Hosting:
-
-```bash
-npx expo export --platform web
-npx eas-cli@latest deploy
-```
-
-Danach in `app.json` beim `expo-router`-Plugin die `origin` auf die Deploy-URL setzen und
-`ANTHROPIC_API_KEY` als Umgebungsvariable beim Hosting hinterlegen.
-
-## Hinweise
-
-- Die Preise sind KI-Schätzungen ohne Gewähr. Kilometerstand, Zustand und Ausstattung kann die
-  KI auf einem Foto nicht sehen.
-- Jede Erkennung ist ein API-Aufruf und kostet ein paar Rappen.
+- Echte Kursdaten und Buchungen anbinden (z.B. das Buchungstool der Webseite oder eine eigene API)
+- Echtes Login und Bezahlung (Credits, Abos)
+- App-Icon und Splash-Screen mit dem Wellnest-Logo ersetzen (`assets/images/`)

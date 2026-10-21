@@ -1,18 +1,18 @@
 {
   "expo": {
-    "name": "Autoerkenner",
-    "slug": "autoerkenner",
+    "name": "The Wellnest",
+    "slug": "thewellnest",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
-    "scheme": "autoerkenner",
-    "userInterfaceStyle": "automatic",
+    "scheme": "thewellnest",
+    "userInterfaceStyle": "light",
     "ios": {
       "icon": "./assets/expo.icon"
     },
     "android": {
       "adaptiveIcon": {
-        "backgroundColor": "#E6F4FE",
+        "backgroundColor": "#EEE8DF",
         "foregroundImage": "./assets/images/android-icon-foreground.png",
         "backgroundImage": "./assets/images/android-icon-background.png",
         "monochromeImage": "./assets/images/android-icon-monochrome.png"
@@ -20,7 +20,7 @@
       "predictiveBackGestureEnabled": false
     },
     "web": {
-      "output": "server",
+      "output": "static",
       "favicon": "./assets/images/favicon.png"
     },
     "plugins": [
@@ -28,16 +28,9 @@
       [
         "expo-splash-screen",
         {
-          "backgroundColor": "#208AEF",
+          "backgroundColor": "#F6F1EA",
           "image": "./assets/images/splash-icon.png",
           "imageWidth": 76
-        }
-      ],
-      [
-        "expo-image-picker",
-        {
-          "cameraPermission": "Autoerkenner braucht die Kamera, um Autos zu fotografieren und zu erkennen.",
-          "photosPermission": "Autoerkenner braucht Zugriff auf deine Fotos, um Autos auf bestehenden Bildern zu erkennen."
         }
       ]
     ],
