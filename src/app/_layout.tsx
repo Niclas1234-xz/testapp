@@ -6,7 +6,7 @@ import { useFonts } from 'expo-font';
 import { DefaultTheme, Stack, ThemeProvider, type Theme } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
 import { StatusBar } from 'expo-status-bar';
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 
 import { Intro } from '@/components/intro';
 import { prefetchLogos } from '@/components/logo';
@@ -44,11 +44,8 @@ export default function RootLayout() {
   });
 
   // The start-up animation plays once per app launch, on the same cream as the native splash.
+  // The splash stays up until the animation is on screen, so nothing flashes in between.
   const [introVisible, setIntroVisible] = useState(true);
-
-  useEffect(() => {
-    if (loaded || error) SplashScreen.hide();
-  }, [loaded, error]);
 
   if (!loaded && !error) return null;
 
@@ -60,7 +57,9 @@ export default function RootLayout() {
           <Stack.Screen name="session/[id]" options={modalOptions} />
           <Stack.Screen name="instructor/[id]" options={modalOptions} />
         </Stack>
-        {introVisible && <Intro onDone={() => setIntroVisible(false)} />}
+        {introVisible && (
+          <Intro onShown={() => SplashScreen.hide()} onDone={() => setIntroVisible(false)} />
+        )}
         <StatusBar style="dark" />
       </NestProvider>
     </ThemeProvider>
